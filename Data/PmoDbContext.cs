@@ -122,8 +122,8 @@ public class PmoDbContext : DbContext
             entity.Property(x => x.EmployeeName).HasMaxLength(256).IsRequired();
             entity.Property(x => x.ActivityName).HasMaxLength(256);
             entity.Property(x => x.ChangedBy).HasMaxLength(256).IsRequired();
-            entity.Property(x => x.OldValueJson).HasColumnType("nvarchar(max)");
-            entity.Property(x => x.NewValueJson).HasColumnType("nvarchar(max)");
+            entity.Property(x => x.OldValueJson);
+            entity.Property(x => x.NewValueJson);
 
             entity.HasIndex(x => new { x.EmployeeName, x.PeriodStart });
         });

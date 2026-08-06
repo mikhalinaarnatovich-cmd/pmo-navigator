@@ -20,9 +20,18 @@ WORKDIR /app
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 ENV LANG=C.UTF-8
 
+# Копируем скомпилированное приложение
 COPY --from=build /app/publish ./
 
-# Порт, который слушает приложение (Render/Railway пробрасывают сюда)
+# Копируем SQL-миграцию и данные проектов (нужны при запуске)
+COPY --from=build /src/Database/ ./Database/
+COPY --from=build /src/wwwroot/ ./wwwroot/
+
+# Render передаёт строку подключения через переменную окружения
+# ConnectionStrings__PmoNavigatorDb
+# Авто-миграция выполнится при старте (см. Program.cs)
+
+# Порт, который слушает приложение (Render пробрасывает сюда)
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
 

@@ -24,4 +24,17 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- Включить SQL-миграцию и данные в публикацию (для Docker/хостинга) -->
+  <ItemGroup>
+    <None Update="Database/migrate_postgres.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Database/qlik_load_script.qs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="wwwroot/data/**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
