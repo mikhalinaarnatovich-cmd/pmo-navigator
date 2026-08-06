@@ -135,35 +135,6 @@ ON CONFLICT (Year, Month) DO NOTHING;
 -- QLIK: представление для регламентной выгрузки
 -- Qlik должен подтягивать данные из этого представления, а не из Excel.
 -- ═══════════════════════════════════════════════════════════════════════════
-CREATE OR REPLACE VIEW dbo.vw_ResourcePlanForQlik AS
-SELECT
-    ra.PeriodStart,
-    ra.EmployeeName,
-    ra.EmployeeLogin,
-    ra.Kind,
-    ra.ProjectId,
-    COALESCE(p."Название проекта", ra.ActivityName, 'Проект #' || ra.ProjectId) AS ProjectName,
-    p."Статус проекта"   AS ProjectStatus,
-    p."Отдел владелец проекта" AS Department,
-    ra.AllocationPercent,
-    ra.PlannedHours,
-    ra.CalendarHoursForMonth,
-    ra.Comment,
-    ra.UpdatedAt,
-    ra.UpdatedBy,
-    e.Rate     AS EmployeeRate,
-    e.Department AS EmployeeDepartment,
-    e.Sector   AS EmployeeSector
-FROM dbo.ResourceAllocations ra
-LEFT JOIN dbo.Employees e ON e.FullName = ra.EmployeeName
-LEFT JOIN LATERAL (
-    SELECT * FROM (VALUES (1)) AS dummy  -- projects.csv пока не в БД
-) AS dummy_table
-    ON TRUE
--- Когда projects.csv будет загружен в таблицу dbo.Projects:
--- LEFT JOIN dbo.Projects p ON p.ProjectId = ra.ProjectId
-ORDER BY ra.PeriodStart, ra.EmployeeName;
-
 -- Временная версия без JOIN к проектам (пока projects.csv не в БД):
 CREATE OR REPLACE VIEW dbo.vw_ResourcePlanForQlik AS
 SELECT
@@ -185,3 +156,64 @@ SELECT
 FROM dbo.ResourceAllocations ra
 LEFT JOIN dbo.Employees e ON e.FullName = ra.EmployeeName
 ORDER BY ra.PeriodStart, ra.EmployeeName;
+
+-- ── Начальный список сотрудников (из участников проектов, для тестирования) ──
+-- Отдел/сектор/руководитель нужно проставить позже через /api/employees или bulk-import.
+INSERT INTO dbo.Employees (FullName, Rate) VALUES
+('Алесич (Антоненко) Анастасия', 1.00),
+('Ануфриёнок Виктория', 1.00),
+('Апранич Евгений', 1.00),
+('Арнатович Михалина', 1.00),
+('Астапенко Павел', 1.00),
+('Ашкинадзе Семён', 1.00),
+('Бабенко Наталия', 1.00),
+('Бабенко Наталия Артуровна', 1.00),
+('Бермудес Ривера Лариса', 1.00),
+('Бондаренко Андрей', 1.00),
+('Бондаренко Юрий', 1.00),
+('Борисёнок Ольга', 1.00),
+('Брезицкий Влад', 1.00),
+('Бычкова Ольга', 1.00),
+('Гарбаль Сергей', 1.00),
+('Гутыро (Савина) Виктория', 1.00),
+('Дарья Крутько', 1.00),
+('Для распределения · Dev', 1.00),
+('Добриянец Алексей', 1.00),
+('Жалевич Дмитрий', 1.00),
+('Журавская Ксения', 1.00),
+('Жучкевич Алексей', 1.00),
+('Захарчук Павел', 1.00),
+('Зелёнко Ольга', 1.00),
+('Злобин Роман', 1.00),
+('Иванишина Галина', 1.00),
+('Ирина Шваб (БА)', 1.00),
+('Касичев Павел', 1.00),
+('Качура Виктор', 1.00),
+('Клачко Анна', 1.00),
+('Колосовская Елена', 1.00),
+('Колубако Анастасия', 1.00),
+('Кот Александр', 1.00),
+('Кузмицкая (Романова) Кристина', 1.00),
+('Кулешова Наталья', 1.00),
+('Куткович Марина', 1.00),
+('Леоненко Антон', 1.00),
+('Леоненко Егор', 1.00),
+('Махнович Светлана', 1.00),
+('Мелешко Александр', 1.00),
+('Мозолевский Андрей', 1.00),
+('Молчан Павел', 1.00),
+('Москалёва Ирина', 1.00),
+('Никитин Борис', 1.00),
+('Норенко Вадим', 1.00),
+('Станкевич Ирина', 1.00),
+('Сурин Кирилл', 1.00),
+('Тарасевич Юрий', 1.00),
+('Титов Тимур', 1.00),
+('Хвин Юлия', 1.00),
+('Цвиликов Виктор', 1.00),
+('Шваб Ирина', 1.00),
+('Шевчик Валерьян', 1.00),
+('Шевчук Алексей', 1.00),
+('Шпилёв Андрей', 1.00),
+('Шульженко Юлианна', 1.00)
+ON CONFLICT (FullName) DO NOTHING;

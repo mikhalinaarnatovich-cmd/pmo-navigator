@@ -4,6 +4,7 @@ using PmoNav.Data;
 using PmoNav.Services;
 using Npgsql;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -128,32 +129,64 @@ else
 var app = builder.Build();
 
 // ── Авто-миграция БД при запуске ─────────────────────────────────────
-try
+// Выполняем КАЖДЫЙ SQL-statement отдельно (не одним батчем), чтобы ошибка
+// в одном (например, в черновом view) не откатывала создание остальных таблиц.
+if (connStr.StartsWith("Host=") || connStr.Contains("Port=5432"))
 {
-    if (connStr.StartsWith("Host=") || connStr.Contains("Port=5432"))
-    {
-        var migrationPath = Path.Combine(AppContext.BaseDirectory, "Database", "migrate_postgres.sql");
-        if (!File.Exists(migrationPath))
-            migrationPath = Path.Combine(builder.Environment.ContentRootPath, "Database", "migrate_postgres.sql");
+    var migrationPath = Path.Combine(AppContext.BaseDirectory, "Database", "migrate_postgres.sql");
+    if (!File.Exists(migrationPath))
+        migrationPath = Path.Combine(builder.Environment.ContentRootPath, "Database", "migrate_postgres.sql");
 
-        if (File.Exists(migrationPath))
+    if (File.Exists(migrationPath))
+    {
+        try
         {
-            var sql = await File.ReadAllTextAsync(migrationPath);
+            var rawSql = await File.ReadAllTextAsync(migrationPath);
+
+            // Убираем строки-комментарии (начинающиеся с --), чтобы точки с запятой
+            // внутри комментариев не путали разбивку на отдельные statements.
+            var cleanedLines = rawSql
+                .Split('\n')
+                .Where(line => !line.TrimStart().StartsWith("--"))
+                .ToArray();
+            var cleanedSql = string.Join('\n', cleanedLines);
+
+            var statements = cleanedSql
+                .Split(';')
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 0)
+                .ToList();
+
             await using var conn = new NpgsqlConnection(connStr);
             await conn.OpenAsync();
-            await using var cmd = new NpgsqlCommand(sql, conn);
-            await cmd.ExecuteNonQueryAsync();
-            Console.WriteLine("[Startup] Database migration completed successfully.");
+
+            int okCount = 0, failCount = 0;
+            foreach (var statement in statements)
+            {
+                try
+                {
+                    await using var cmd = new NpgsqlCommand(statement, conn);
+                    await cmd.ExecuteNonQueryAsync();
+                    okCount++;
+                }
+                catch (Exception stmtEx)
+                {
+                    failCount++;
+                    Console.WriteLine($"[Startup] Migration statement failed (continuing): {stmtEx.Message}");
+                }
+            }
+
+            Console.WriteLine($"[Startup] Database migration finished: {okCount} statements OK, {failCount} failed.");
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine("[Startup] WARNING: migrate_postgres.sql not found at " + AppContext.BaseDirectory);
+            Console.WriteLine($"[Startup] WARNING: Migration error: {ex.Message}");
         }
     }
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"[Startup] WARNING: Migration error: {ex.Message}");
+    else
+    {
+        Console.WriteLine("[Startup] WARNING: migrate_postgres.sql not found at " + AppContext.BaseDirectory);
+    }
 }
 
 app.UseStaticFiles();
