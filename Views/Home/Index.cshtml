@@ -1,0 +1,5058 @@
+@{
+    Layout = null;
+    var login   = ViewBag.Login   as string ?? "";
+    var display = ViewBag.Display as string ?? "";
+}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PMO Навигатор</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══ RESET & BASE ══════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;font-size:14px;
+  background:#F4F5F7;color:#1E2128}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit}
+
+/* ═══ LAYOUT ════════════════════════════════════════════════════════════════ */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* Header */
+.header{background:#1A2233;color:#fff;padding:0 24px;height:56px;
+  display:flex;align-items:center;gap:16px;flex-shrink:0;z-index:100;
+  box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.header-logo{display:flex;align-items:center;gap:10px}
+.header-logo svg{opacity:.9}
+.header-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.header-sub{font-size:11px;opacity:.55;font-weight:400}
+.header-spacer{flex:1}
+.header-user{display:flex;align-items:center;gap:8px;font-size:12px;opacity:.8}
+.header-user svg{opacity:.7}
+.header-reload{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+  color:#fff;font-size:12px;padding:5px 12px;border-radius:6px;
+  display:flex;align-items:center;gap:6px;transition:background .15s}
+.header-reload:hover{background:rgba(255,255,255,.2)}
+.header-reload.loading svg{animation:spin 1s linear infinite}
+/* Кнопка Портфель в header */
+.header-portfolio{background:rgba(99,102,241,.25);border:1px solid rgba(99,102,241,.4);
+  color:#C7D2FE;font-size:12px;padding:5px 14px;border-radius:6px;
+  display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s}
+.header-portfolio:hover{background:rgba(99,102,241,.4)}
+.header-portfolio.active{background:#4F46E5;border-color:#4F46E5;color:#fff}
+/* Кнопка ПК в header */
+.header-pk{background:rgba(5,150,105,.2);border:1px solid rgba(5,150,105,.35);
+  color:#6EE7B7;font-size:12px;padding:5px 14px;border-radius:6px;
+  display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s}
+.header-pk:hover{background:rgba(5,150,105,.35)}
+.header-pk.active{background:#059669;border-color:#059669;color:#fff}
+@@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Body */
+.body{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:220px;flex-shrink:0;background:#fff;border-right:1px solid #E5E7EB;
+  display:flex;flex-direction:column;overflow:hidden}
+.sidebar-title{padding:14px 16px 10px;font-size:11px;font-weight:600;
+  color:#9CA3AF;text-transform:uppercase;letter-spacing:.8px}
+.status-list{flex:1;overflow-y:auto;padding:0 8px 12px}
+.status-btn{width:100%;text-align:left;border:none;background:none;
+  padding:8px 10px;border-radius:8px;font-size:13px;color:#374151;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:background .12s,color .12s;cursor:pointer}
+.status-btn:hover{background:#F3F4F6}
+.status-btn.active{background:#EFF6FF;color:#1D4ED8;font-weight:600}
+.status-btn .cnt{font-size:11px;background:#E5E7EB;color:#6B7280;
+  padding:1px 7px;border-radius:10px;font-weight:500}
+.status-btn.active .cnt{background:#DBEAFE;color:#1D4ED8}
+.sidebar-sep{height:1px;background:#E5E7EB;margin:8px 16px}
+
+/* Main panel */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Toolbar */
+.toolbar{padding:14px 20px 12px;background:#fff;border-bottom:1px solid #E5E7EB;
+  display:flex;align-items:center;gap:10px;flex-shrink:0}
+.search-wrap{flex:1;max-width:360px;position:relative}
+.search-wrap input{width:100%;border:1px solid #D1D5DB;border-radius:8px;
+  padding:7px 12px 7px 34px;font-size:13px;outline:none;
+  transition:border-color .15s,box-shadow .15s;background:#F9FAFB}
+.search-wrap input:focus{border-color:#3B82F6;box-shadow:0 0 0 3px rgba(59,130,246,.12);background:#fff}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  color:#9CA3AF;pointer-events:none}
+.toolbar-info{font-size:12px;color:#9CA3AF;margin-left:auto}
+.tb-filter{border:1px solid #D1D5DB;border-radius:7px;padding:5px 8px;
+  font-size:12px;color:#374151;background:#F9FAFB;outline:none;cursor:pointer;
+  max-width:130px;transition:border-color .15s}
+.tb-filter:focus{border-color:#3B82F6}
+
+/* Table */
+.table-wrap{flex:1;overflow:auto;padding:16px 20px}
+.projects-table{width:100%;border-collapse:collapse;font-size:13px}
+.projects-table th{position:sticky;top:0;background:#F9FAFB;
+  border-bottom:2px solid #E5E7EB;padding:9px 12px;text-align:left;
+  font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;
+  letter-spacing:.5px;white-space:nowrap;z-index:10}
+.projects-table td{padding:10px 12px;border-bottom:1px solid #F3F4F6;
+  vertical-align:middle}
+.projects-table tr:hover td{background:#F8FAFF;cursor:pointer}
+.projects-table tr.selected td{background:#EFF6FF}
+
+.col-id{width:60px;color:#6B7280}
+.col-name{max-width:300px}
+.p-name{font-weight:600;color:#111827;line-height:1.35}
+.p-dept{font-size:11px;color:#9CA3AF;margin-top:2px}
+.col-pm{white-space:nowrap}
+.col-cust{white-space:nowrap}
+.col-dates{white-space:nowrap;color:#374151;font-size:12px}
+.col-prio{width:100px}
+
+/* Бейджи статусов */
+.badge{display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:600;padding:3px 9px;border-radius:12px;white-space:nowrap}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.s-active{background:#DCFCE7;color:#166534}.s-active::before{background:#16A34A}
+.s-pause{background:#FEF3C7;color:#92400E}.s-pause::before{background:#D97706}
+.s-done{background:#F3F4F6;color:#6B7280}.s-done::before{background:#9CA3AF}
+.s-init{background:#EDE9FE;color:#5B21B6}.s-init::before{background:#7C3AED}
+.s-plan{background:#DBEAFE;color:#1E40AF}.s-plan::before{background:#2563EB}
+.s-cancel{background:#FEE2E2;color:#991B1B}.s-cancel::before{background:#DC2626}
+.s-backlog{background:#FDF4FF;color:#701A75}.s-backlog::before{background:#A855F7}
+.s-finish{background:#E0F2FE;color:#075985}.s-finish::before{background:#0284C7}
+.s-delay{background:#FFF7ED;color:#9A3412}.s-delay::before{background:#EA580C}
+
+.prio-0{color:#DC2626;font-weight:700;font-size:11px}
+.prio-1{color:#D97706;font-weight:600;font-size:11px}
+.prio-2{color:#2563EB;font-size:11px}
+.prio-3{color:#6B7280;font-size:11px}
+.prio-4{color:#D1D5DB;font-size:11px}
+
+/* ═══ КАРТОЧКА ПРОЕКТА ════════════════════════════════════════════════════ */
+.detail-panel{position:fixed;right:0;top:56px;bottom:0;width:480px;z-index:300;
+  background:#fff;border-left:1px solid #E5E7EB;
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translateX(100%);transition:transform .25s ease;
+  box-shadow:-4px 0 24px rgba(0,0,0,.10)}
+.detail-panel.open{transform:translateX(0)}
+
+.detail-header{padding:18px 20px 14px;border-bottom:1px solid #F3F4F6;
+  display:flex;align-items:flex-start;gap:12px}
+.detail-header-info{flex:1;min-width:0}
+.detail-id{font-size:11px;color:#9CA3AF;font-weight:600;margin-bottom:3px}
+.detail-name{font-size:16px;font-weight:700;color:#111827;line-height:1.3}
+.detail-close{border:none;background:none;color:#9CA3AF;
+  width:28px;height:28px;border-radius:6px;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;transition:background .12s,color .12s}
+.detail-close:hover{background:#F3F4F6;color:#374151}
+
+.detail-body{flex:1;overflow-y:auto;padding:16px 20px}
+.detail-section{margin-bottom:20px}
+.detail-section-title{font-size:11px;font-weight:600;color:#9CA3AF;
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.detail-field label{font-size:11px;color:#9CA3AF;display:block;margin-bottom:3px}
+.detail-field span{font-size:13px;color:#111827;font-weight:500;display:block}
+.detail-goal{font-size:13px;color:#374151;line-height:1.55;
+  background:#F9FAFB;padding:10px 12px;border-radius:8px;border:1px solid #E5E7EB}
+
+.detail-tabs{display:flex;border-bottom:2px solid #E5E7EB;margin-bottom:16px}
+.dtab{border:none;background:none;font-size:13px;font-weight:500;
+  color:#6B7280;padding:8px 12px;border-bottom:2px solid transparent;
+  margin-bottom:-2px;transition:color .12s}
+.dtab.active{color:#1D4ED8;border-bottom-color:#1D4ED8;font-weight:600}
+.dtab:hover:not(.active){color:#374151}
+.dtab-content{display:none}
+.dtab-content.active{display:block}
+
+/* Участники */
+.member-row{display:flex;align-items:center;gap:10px;
+  padding:7px 0;border-bottom:1px solid #F3F4F6}
+.member-row:last-child{border-bottom:none}
+.member-avatar{width:30px;height:30px;border-radius:50%;background:#E0E7FF;
+  color:#3730A3;font-size:11px;font-weight:700;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0}
+.member-info{flex:1;min-width:0}
+.member-name{font-size:13px;font-weight:500;color:#111827}
+.member-role{font-size:11px;color:#9CA3AF}
+
+/* Документы */
+.doc-row{display:flex;align-items:center;gap:10px;
+  padding:7px 0;border-bottom:1px solid #F3F4F6;cursor:pointer}
+.doc-row:last-child{border-bottom:none}
+.doc-row:hover .doc-name{color:#1D4ED8}
+.doc-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;font-size:10px;font-weight:700}
+.doc-icon.docx{background:#DBEAFE;color:#1D4ED8}
+.doc-icon.xlsx{background:#DCFCE7;color:#166534}
+.doc-icon.pptx{background:#FEF3C7;color:#92400E}
+.doc-icon.pdf{background:#FEE2E2;color:#991B1B}
+.doc-icon.other{background:#F3F4F6;color:#6B7280}
+.doc-name{font-size:12px;color:#374151;flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc-date{font-size:11px;color:#9CA3AF;white-space:nowrap}
+.doc-empty{font-size:12px;color:#9CA3AF;text-align:center;padding:20px;
+  background:#F9FAFB;border-radius:8px}
+.doc-folder-group{margin-bottom:8px;border:1px solid #E5E7EB;border-radius:10px;overflow:hidden}
+.doc-folder-header{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  background:#FFFBEB;cursor:pointer;user-select:none}
+.doc-folder-icon{font-size:16px;flex-shrink:0}
+.doc-folder-title{font-size:13px;font-weight:600;color:#374151;flex:1}
+.doc-folder-cnt{font-size:11px;background:#E5E7EB;color:#6B7280;
+  padding:1px 8px;border-radius:10px;font-weight:600}
+.doc-folder-cnt.has-files{background:#DBEAFE;color:#1D4ED8}
+.doc-folder-cnt.no-files{background:#FEE2E2;color:#DC2626}
+.doc-folder-body{padding:4px 8px 8px}
+
+.sd-link{display:inline-flex;align-items:center;gap:6px;
+  font-size:13px;color:#2563EB;text-decoration:none;
+  padding:7px 12px;border:1px solid #DBEAFE;border-radius:8px;
+  background:#EFF6FF;transition:background .12s}
+.sd-link:hover{background:#DBEAFE}
+
+/* ═══ ДИАГРАММА ГАНТА (карточка) ═══════════════════════════════════════════ */
+.gantt-wrap{overflow-x:auto;padding-bottom:8px}
+.gantt-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;min-width:0}
+.gantt-label{width:130px;flex-shrink:0;font-size:11px;color:#374151;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.gantt-track{flex:1;height:20px;background:#F3F4F6;border-radius:4px;
+  position:relative;min-width:160px}
+.gantt-bar{position:absolute;height:100%;border-radius:4px;
+  display:flex;align-items:center;padding:0 6px;
+  font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden}
+.gantt-bar.active{background:#2563EB}
+.gantt-bar.done{background:#9CA3AF}
+.gantt-bar.pause{background:#D97706}
+.gantt-bar.overdue{background:#DC2626}
+.gantt-bar.fact{background:#059669}
+.gantt-axis{display:flex;margin-left:138px;margin-bottom:4px;font-size:10px;color:#9CA3AF}
+.gantt-axis span{flex:1;text-align:center}
+.gantt-today{position:absolute;top:0;bottom:0;width:2px;background:#DC2626;
+  opacity:.7;z-index:2;border-radius:1px}
+.gantt-empty{font-size:12px;color:#9CA3AF;text-align:center;padding:20px;
+  background:#F9FAFB;border-radius:8px}
+.gantt-legend{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap}
+.gantt-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#6B7280}
+.gantt-legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* ═══ ПОРТФЕЛЬ — экран ══════════════════════════════════════════════════════ */
+.portfolio-view{flex:1;display:none;flex-direction:column;overflow:hidden;background:#F4F5F7}
+.portfolio-view.active{display:flex}
+
+/* Панель фильтров портфеля */
+.pf-filters{padding:12px 20px;background:#fff;border-bottom:1px solid #E5E7EB;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0}
+.pf-filters label{font-size:11px;color:#6B7280;font-weight:600;white-space:nowrap}
+.pf-select{border:1px solid #D1D5DB;border-radius:7px;padding:5px 10px;
+  font-size:12px;color:#374151;background:#F9FAFB;outline:none;cursor:pointer;
+  transition:border-color .15s}
+.pf-select:focus{border-color:#6366F1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.pf-checkbox-wrap{display:flex;align-items:center;gap:5px;font-size:12px;color:#374151;cursor:pointer}
+.pf-checkbox-wrap input{cursor:pointer;accent-color:#6366F1}
+.pf-sep{width:1px;height:20px;background:#E5E7EB;flex-shrink:0}
+.pf-scale-group{display:flex;gap:4px;align-items:center}
+.pf-scale-btn{border:1px solid #D1D5DB;background:#F9FAFB;color:#374151;
+  font-size:12px;padding:5px 12px;border-radius:7px;transition:all .12s}
+.pf-scale-btn:hover{background:#EEF2FF;border-color:#818CF8;color:#4F46E5}
+.pf-scale-btn.active{background:#4F46E5;border-color:#4F46E5;color:#fff;font-weight:600}
+.pf-reset{border:1px solid #E5E7EB;background:#fff;color:#6B7280;
+  font-size:12px;padding:5px 12px;border-radius:7px;margin-left:auto;
+  transition:all .12s}
+.pf-reset:hover{background:#F3F4F6;color:#374151}
+.pf-count{font-size:12px;color:#9CA3AF;white-space:nowrap}
+
+/* Ганта портфеля */
+.portfolio-gantt-wrap{flex:1;overflow:auto;padding:16px 20px}
+.pg-container{min-width:900px}
+
+/* Заголовок шкалы */
+.pg-header{display:flex;margin-bottom:4px}
+.pg-header-spacer{width:220px;flex-shrink:0}
+.pg-axis-wrap{flex:1;position:relative;height:22px}
+.pg-axis-label{position:absolute;font-size:10px;color:#9CA3AF;
+  transform:translateX(-50%);white-space:nowrap;top:4px}
+.pg-axis-tick{position:absolute;top:0;bottom:0;width:1px;background:#E5E7EB}
+
+/* Строка проекта */
+.pg-row{display:flex;align-items:center;border-radius:6px;
+  transition:background .1s;cursor:pointer;margin-bottom:3px}
+.pg-row:hover{background:rgba(99,102,241,.06)}
+.pg-label-cell{width:220px;flex-shrink:0;padding:4px 10px 4px 0;
+  display:flex;align-items:center;gap:8px}
+.pg-label-id{font-size:10px;color:#9CA3AF;flex-shrink:0;width:32px}
+.pg-label-name{font-size:12px;color:#111827;font-weight:500;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.pg-track-cell{flex:1;position:relative;height:26px}
+.pg-track{position:absolute;inset:3px 0;background:#F3F4F6;border-radius:4px}
+.pg-bar{position:absolute;top:3px;bottom:3px;border-radius:4px;
+  min-width:4px;transition:opacity .15s;z-index:1}
+.pg-bar:hover{opacity:.85}
+.pg-bar.pg-active{background:#4F46E5}
+.pg-bar.pg-plan{background:#2563EB}
+.pg-bar.pg-pause{background:#D97706}
+.pg-bar.pg-done{background:#9CA3AF;opacity:.7;border:1px solid #6B7280}
+.pg-bar.pg-init{background:#7C3AED}
+.pg-bar.pg-finish{background:#0284C7}
+.pg-bar.pg-cancel{background:#DC2626;opacity:.5}
+.pg-bar.pg-backlog{background:#A855F7}
+.pg-bar.pg-delay{background:#EA580C}
+.pg-bar.pg-overdue{background:#DC2626}
+.pg-today-line{position:absolute;top:0;bottom:0;width:2px;
+  background:#DC2626;opacity:.8;z-index:5;border-radius:1px;pointer-events:none}
+.pg-grid-line{position:absolute;top:0;bottom:0;width:1px;
+  background:#E5E7EB;z-index:0;pointer-events:none}
+
+/* Легенда портфеля */
+.pg-legend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 20px;
+  background:#fff;border-top:1px solid #E5E7EB;flex-shrink:0}
+.pg-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#6B7280}
+.pg-legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.pg-empty{text-align:center;padding:60px 20px;color:#9CA3AF;font-size:13px}
+
+/* ═══ ПК — экран ════════════════════════════════════════════════════════════ */
+.pk-view{flex:1;display:none;flex-direction:column;overflow:hidden;background:#F4F5F7}
+.pk-view.active{display:flex}
+
+/* Шапка ПК */
+.pk-header-bar{padding:12px 20px;background:#fff;border-bottom:1px solid #E5E7EB;
+  display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap}
+.pk-header-title{font-size:14px;font-weight:700;color:#111827}
+.pk-header-sub{font-size:12px;color:#9CA3AF}
+.pk-count{font-size:12px;color:#6B7280;margin-left:auto;white-space:nowrap}
+.pk-filter{border:1px solid #D1D5DB;border-radius:7px;padding:5px 10px;
+  font-size:12px;color:#374151;background:#F9FAFB;outline:none;cursor:pointer;
+  transition:border-color .15s}
+.pk-filter:focus{border-color:#059669}
+
+/* Таблица ПК */
+.pk-table-wrap{flex:1;overflow:auto;padding:16px 20px}
+.pk-table{width:100%;border-collapse:collapse;font-size:13px}
+.pk-table th{position:sticky;top:0;background:#F0FDF4;
+  border-bottom:2px solid #BBF7D0;padding:9px 12px;text-align:left;
+  font-size:11px;font-weight:600;color:#166534;text-transform:uppercase;
+  letter-spacing:.5px;white-space:nowrap;z-index:10}
+.pk-table td{padding:9px 12px;border-bottom:1px solid #F3F4F6;vertical-align:middle}
+.pk-table tr:hover td{background:#F0FDF4;cursor:pointer}
+
+/* RAG-статус кружки */
+.rag-dot{display:inline-block;width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.rag-red{background:#DC2626}
+.rag-yellow{background:#D97706}
+.rag-green{background:#16A34A}
+.rag-cell{display:flex;align-items:center;gap:6px}
+.rag-label{font-size:11px;color:#6B7280}
+
+/* Строка с красным статусом — жирная левая граница */
+.pk-row-red td:first-child{border-left:3px solid #DC2626}
+.pk-row-red td{background:#FFF5F5!important}
+.pk-row-yellow td{background:#FFFBEB!important}
+
+/* Inline редактирование комментария */
+.pk-comment-cell{min-width:180px;max-width:260px}
+.pk-comment-text{font-size:12px;color:#374151;cursor:pointer;
+  border-radius:4px;padding:3px 6px;transition:background .12s;
+  min-height:24px;display:block;line-height:1.5}
+.pk-comment-text:hover{background:#F0FDF4}
+.pk-comment-text.empty{color:#9CA3AF;font-style:italic}
+.pk-comment-edit{display:none;flex-direction:column;gap:6px}
+.pk-comment-edit.active{display:flex}
+.pk-comment-edit textarea{border:1px solid #BBF7D0;border-radius:6px;
+  padding:6px 8px;font-size:12px;font-family:inherit;resize:vertical;
+  min-height:56px;width:100%;outline:none;
+  transition:border-color .15s,box-shadow .15s}
+.pk-comment-edit textarea:focus{border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.12)}
+.pk-comment-save{background:#059669;color:#fff;border:none;
+  padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;
+  cursor:pointer;transition:background .12s;align-self:flex-start}
+.pk-comment-save:hover{background:#047857}
+.pk-comment-cancel{background:none;border:none;color:#9CA3AF;
+  font-size:11px;padding:4px 8px;cursor:pointer;transition:color .12s}
+.pk-comment-cancel:hover{color:#374151}
+.pk-comment-actions{display:flex;gap:4px;align-items:center}
+
+/* Диаграммы ПК */
+.pk-charts-row{display:flex;gap:12px;padding:12px 20px;background:#fff;
+  border-bottom:1px solid #E5E7EB;flex-shrink:0;flex-wrap:wrap}
+.pk-chart-card{flex:1;min-width:220px;background:#F9FAFB;border:1px solid #E5E7EB;
+  border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.pk-chart-title{font-size:12px;font-weight:700;color:#374151;align-self:flex-start}
+.pk-chart-legend{display:flex;flex-direction:column;gap:4px;width:100%}
+.pk-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#374151}
+.pk-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pk-legend-label{flex:1}
+.pk-legend-cnt{font-weight:700;color:#374151}
+
+/* Скоринг бейдж */
+.score-badge{display:inline-block;font-size:12px;font-weight:700;
+  padding:2px 8px;border-radius:10px;min-width:36px;text-align:center}
+.score-high{background:#DCFCE7;color:#166534}
+.score-mid{background:#FEF3C7;color:#92400E}
+.score-low{background:#FEE2E2;color:#991B1B}
+
+/* ═══ СЧЁТЧИКИ ПК ══════════════════════════════════════════════════════════ */
+.pk-counters{display:flex;gap:12px;padding:10px 20px;background:#fff;border-bottom:1px solid #E5E7EB;flex-shrink:0;flex-wrap:wrap}
+.pk-counter-card{flex:1;min-width:100px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:10px 16px;display:flex;flex-direction:column;gap:2px;cursor:default}
+.pk-counter-label{font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:.4px}
+.pk-counter-value{font-size:28px;font-weight:700;line-height:1.1}
+.pk-counter-all .pk-counter-value{color:#2563EB}
+.pk-counter-work .pk-counter-value{color:#16A34A}
+.pk-counter-red .pk-counter-value{color:#DC2626}
+.pk-counter-yellow .pk-counter-value{color:#D97706}
+.pk-counter-pause .pk-counter-value{color:#9CA3AF}
+.pk-counter-deadline .pk-counter-value{color:#7C3AED}
+
+/* ═══ ЗАПРОСЫ НА ИЗМЕНЕНИЕ ══════════════════════════════════════════════════ */
+.cr-view{flex:1;display:none;flex-direction:column;overflow:hidden;background:#F4F5F7}
+.cr-view.active{display:flex}
+.cr-header-bar{padding:12px 20px;background:#fff;border-bottom:1px solid #E5E7EB;
+  display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap}
+.cr-header-title{font-size:14px;font-weight:700;color:#111827}
+.cr-header-sub{font-size:12px;color:#9CA3AF}
+.cr-count{font-size:12px;color:#6B7280;margin-left:auto;white-space:nowrap}
+.cr-filter{border:1px solid #D1D5DB;border-radius:7px;padding:5px 10px;
+  font-size:12px;color:#374151;background:#F9FAFB;outline:none;cursor:pointer}
+.cr-filter:focus{border-color:#2563EB}
+.cr-table-wrap{flex:1;overflow:auto;padding:16px 20px}
+.cr-table{width:100%;border-collapse:collapse;font-size:13px}
+.cr-table th{position:sticky;top:0;background:#EFF6FF;
+  border-bottom:2px solid #BFDBFE;padding:9px 12px;text-align:left;
+  font-size:11px;font-weight:600;color:#1D4ED8;text-transform:uppercase;
+  letter-spacing:.5px;white-space:nowrap;z-index:10}
+.cr-table td{padding:9px 12px;border-bottom:1px solid #F3F4F6;vertical-align:middle}
+.cr-table tr:hover td{background:#EFF6FF;cursor:pointer}
+.cr-open-btn{background:#2563EB;color:#fff;border:none;padding:4px 12px;
+  border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;
+  transition:background .12s}
+.cr-open-btn:hover{background:#1D4ED8}
+.header-cr{display:flex;align-items:center;gap:6px;padding:6px 14px;
+  background:#059669;color:#fff;border:none;border-radius:8px;
+  font-size:12px;font-weight:600;cursor:pointer;transition:background .15s,transform .1s}
+.header-cr:hover{background:#047857}
+.header-cr.active{background:#047857;box-shadow:0 0 0 2px #6EE7B7}
+
+/* ═══ LOADING OVERLAY ═══════════════════════════════════════════════════════ */
+.loading-overlay{position:fixed;inset:0;background:rgba(26,34,51,.65);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:1000;gap:16px;backdrop-filter:blur(4px)}
+.loading-overlay.hidden{display:none}
+.spinner{width:44px;height:44px;border:4px solid rgba(255,255,255,.2);
+  border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+.loading-text{color:#fff;font-size:14px;font-weight:500;opacity:.9}
+.progress-bar-wrap{width:280px;height:4px;background:rgba(255,255,255,.2);border-radius:2px}
+.progress-bar{height:100%;background:#60A5FA;border-radius:2px;transition:width .3s;width:0}
+
+/* ═══ СОРТИРОВКА & ПРОСРОЧКА ══════════════════════════════════════════════════ */
+.projects-table th[data-sort]:hover{background:#EFF6FF;color:#1D4ED8}
+.projects-table th.sort-asc::after{content:' ↑'}
+.projects-table th.sort-desc::after{content:' ↓'}
+.projects-table th.sort-asc,
+.projects-table th.sort-desc{color:#1D4ED8;background:#EFF6FF}
+.row-overdue td{background:#FFF5F5!important}
+.row-overdue td:first-child{border-left:3px solid #DC2626}
+
+/* ═══ МОДАЛЬНОЕ ОКНО ════════════════════════════════════════════════════════ */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;
+  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-backdrop.hidden{display:none}
+.modal-box{background:#fff;border-radius:12px;width:560px;max-width:96vw;
+  max-height:88vh;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-head{padding:20px 24px 16px;border-bottom:1px solid #E5E7EB;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-head-title{font-size:17px;font-weight:700;color:#111827}
+.modal-head-close{border:none;background:none;font-size:22px;color:#9CA3AF;
+  cursor:pointer;width:30px;height:30px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;line-height:1}
+.modal-head-close:hover{background:#F3F4F6;color:#374151}
+.modal-body{padding:20px 24px;overflow-y:auto;flex:1}
+.modal-foot{padding:14px 24px;border-top:1px solid #E5E7EB;
+  text-align:right;flex-shrink:0}
+.modal-foot button{background:#2563EB;color:#fff;border:none;
+  padding:8px 22px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.modal-foot button:hover{background:#1D4ED8}
+
+.help-section{margin-bottom:18px}
+.help-section-title{font-size:13px;font-weight:700;color:#1D4ED8;margin-bottom:7px}
+.help-section p,.help-section li{font-size:13px;color:#374151;line-height:1.65}
+.help-section ul{padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.help-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+.help-table td{padding:5px 8px;border-bottom:1px solid #F3F4F6;vertical-align:top}
+.help-table tr:nth-child(odd) td{background:#F9FAFB}
+.help-table td:first-child{font-weight:600;white-space:nowrap;color:#111827;width:160px}
+code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#374151}
+
+/* ═══ SCROLLBAR ═════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#9CA3AF}
+
+@@media (max-width:900px){
+  .detail-panel{position:fixed;right:0;top:56px;bottom:0;z-index:200;
+    box-shadow:-4px 0 20px rgba(0,0,0,.15)}
+}
+@@media (max-width:640px){
+  .sidebar{width:48px}
+  .status-btn .label{display:none}
+  .sidebar-title{display:none}
+}
+/* ── Ресурсный план ───────────────────────────────────── */
+.resource-view {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    background: #F4F5F7;
+}
+
+.resource-view.active {
+    display: flex;
+}
+
+.header-resource {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: rgba(37, 99, 235, .20);
+    color: #BFDBFE;
+    border: 1px solid rgba(96, 165, 250, .35);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+
+.header-resource:hover {
+    background: rgba(37, 99, 235, .35);
+}
+
+.header-resource.active {
+    background: #2563EB;
+    border-color: #2563EB;
+    color: #FFFFFF;
+}
+
+.resource-toolbar {
+    padding: 14px 20px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E5E7EB;
+    display: flex;
+    align-items: end;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.resource-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.resource-field label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6B7280;
+}
+
+.resource-field select,
+.resource-field input,
+.resource-field textarea {
+    border: 1px solid #D1D5DB;
+    border-radius: 7px;
+    padding: 7px 10px;
+    background: #FFFFFF;
+    color: #111827;
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+}
+
+.resource-field select:focus,
+.resource-field input:focus,
+.resource-field textarea:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+
+.resource-field select {
+    min-width: 240px;
+    max-width: 390px;
+}
+
+.resource-field input[type="month"] {
+    min-width: 155px;
+}
+
+.resource-field input[type="number"] {
+    width: 110px;
+}
+
+.resource-field textarea {
+    width: 250px;
+    min-height: 36px;
+    resize: vertical;
+}
+
+.resource-save {
+    background: #2563EB;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 7px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background .15s;
+}
+
+.resource-save:hover {
+    background: #1D4ED8;
+}
+
+.resource-save:disabled {
+    background: #93C5FD;
+    cursor: wait;
+}
+
+.resource-message {
+    display: none;
+    padding: 9px 12px;
+    margin: 12px 20px 0;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.resource-message.show {
+    display: block;
+}
+
+.resource-message.ok {
+    background: #DCFCE7;
+    color: #166534;
+    border: 1px solid #BBF7D0;
+}
+
+.resource-message.error {
+    background: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #FECACA;
+}
+
+.resource-summary {
+    padding: 14px 20px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.resource-total-card {
+    min-width: 200px;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 12px 16px;
+}
+
+.resource-total-card.overload {
+    border-color: #FCA5A5;
+    background: #FFF5F5;
+}
+
+.resource-total-name {
+    color: #6B7280;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.resource-total-value {
+    color: #2563EB;
+    font-size: 23px;
+    font-weight: 700;
+}
+
+.resource-total-card.overload .resource-total-value {
+    color: #DC2626;
+}
+
+.resource-table-wrap {
+    flex: 1;
+    overflow: auto;
+    padding: 0 20px 20px;
+}
+
+.resource-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 13px;
+}
+
+.resource-table th {
+    position: sticky;
+    top: 0;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border-bottom: 2px solid #BFDBFE;
+    padding: 10px 12px;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    font-size: 11px;
+    z-index: 1;
+}
+
+.resource-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #F3F4F6;
+    vertical-align: top;
+}
+
+.resource-table tr:last-child td {
+    border-bottom: none;
+}
+
+.resource-delete {
+    background: #FFFFFF;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+    border-radius: 6px;
+    padding: 4px 9px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.resource-delete:hover {
+    background: #FEE2E2;
+}
+.resource-control-title {
+    padding: 0 20px 8px;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.resource-control-wrap {
+    padding: 0 20px 20px;
+    overflow: auto;
+}
+
+.resource-control-table {
+    width: 100%;
+    max-width: 760px;
+    border-collapse: collapse;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 13px;
+}
+
+.resource-control-table th {
+    background: #F9FAFB;
+    color: #6B7280;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+}
+
+.resource-control-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #F3F4F6;
+}
+
+.resource-control-table tr:last-child td {
+    border-bottom: none;
+}
+.resource-control-row {
+    cursor: pointer;
+    transition: background .12s;
+}
+
+.resource-control-row:hover td {
+    background: #EFF6FF;
+}
+.resource-status {
+    display: inline-block;
+    border-radius: 12px;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.resource-status.full {
+    color: #166534;
+    background: #DCFCE7;
+}
+
+.resource-status.partial {
+    color: #92400E;
+    background: #FEF3C7;
+}
+
+.resource-status.empty {
+    color: #991B1B;
+    background: #FEE2E2;
+}
+.resource-person-panel {
+    position: fixed;
+    top: 80px;
+    right: 0;
+    bottom: 0;
+    width: 520px;
+    max-width: 96vw;
+    z-index: 400;
+    display: flex;
+    flex-direction: column;
+    background: #FFFFFF;
+    border-left: 1px solid #E5E7EB;
+    box-shadow: -5px 0 24px rgba(0, 0, 0, .14);
+    transform: translateX(102%);
+    transition: transform .22s ease;
+}
+
+.resource-person-panel.open {
+    transform: translateX(0);
+}
+
+.resource-person-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.resource-person-head-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.resource-person-period {
+    color: #9CA3AF;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.resource-person-name {
+    color: #111827;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.resource-person-close {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: #6B7280;
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+}
+
+.resource-person-close:hover {
+    background: #F3F4F6;
+    color: #111827;
+}
+
+.resource-person-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px 24px;
+}
+
+.resource-person-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    border: 1px solid #DBEAFE;
+    border-radius: 9px;
+    background: #EFF6FF;
+}
+
+.resource-person-total-label {
+    color: #1E40AF;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.resource-person-total-value {
+    color: #2563EB;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.resource-person-list-title {
+    margin: 0 0 8px;
+    color: #6B7280;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+}
+
+.resource-person-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px 0;
+    border-bottom: 1px solid #F3F4F6;
+}
+
+.resource-person-item-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.resource-person-project {
+    color: #111827;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.resource-person-comment {
+    margin-top: 3px;
+    color: #6B7280;
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.resource-person-percent {
+    color: #2563EB;
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.resource-person-actions {
+    display: flex;
+    gap: 5px;
+    margin-left: 8px;
+}
+
+.resource-person-edit,
+.resource-person-delete {
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.resource-person-edit {
+    color: #1D4ED8;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+}
+
+.resource-person-edit:hover {
+    background: #DBEAFE;
+}
+
+.resource-person-delete {
+    color: #B91C1C;
+    background: #FFFFFF;
+    border: 1px solid #FECACA;
+}
+
+.resource-person-delete:hover {
+    background: #FEE2E2;
+}
+.resource-person-add {
+    width: 100%;
+    margin-top: 18px;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #2563EB;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.resource-person-add:hover {
+    background: #1D4ED8;
+}
+
+.resource-person-empty {
+    padding: 22px 12px;
+    border-radius: 8px;
+    background: #F9FAFB;
+    color: #9CA3AF;
+    text-align: center;
+    font-size: 13px;
+}
+
+.resource-kind-group {
+    display: flex;
+    gap: 0;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.resource-kind-btn {
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #F9FAFB;
+    color: #6B7280;
+    border: none;
+    cursor: pointer;
+    transition: all .15s;
+}
+.resource-kind-btn.active {
+    background: #2563EB;
+    color: #FFFFFF;
+}
+.resource-kind-btn:hover:not(.active) {
+    background: #EEF2FF;
+}
+.resource-team-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+.resource-team-filter select {
+    padding: 6px 10px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    font-size: 12px;
+    max-width: 220px;
+}
+.resource-hours-hint {
+    font-size: 10px;
+    color: #9CA3AF;
+    margin-top: 2px;
+}
+.resource-lock-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: rgba(245, 158, 11, .15);
+    color: #D97706;
+    border: 1px solid rgba(245, 158, 11, .35);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.resource-lock-btn:hover { background: rgba(245, 158, 11, .30); }
+.resource-history-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: rgba(99, 102, 241, .15);
+    color: #6366F1;
+    border: 1px solid rgba(99, 102, 241, .35);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.resource-history-btn:hover { background: rgba(99, 102, 241, .30); }
+.resource-history-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.resource-history-modal.open { display: flex; }
+.resource-history-box {
+    background: #FFFFFF;
+    border-radius: 12px;
+    width: 800px;
+    max-height: 80vh;
+    overflow: auto;
+    padding: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.resource-history-close {
+    float: right;
+    font-size: 22px;
+    cursor: pointer;
+    color: #9CA3AF;
+    border: none;
+    background: none;
+}
+.resource-history-table {
+    width: 100%;
+    font-size: 13px;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+.resource-history-table th {
+    text-align: left;
+    padding: 8px 10px;
+    background: #F9FAFB;
+    border-bottom: 2px solid #E5E7EB;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #6B7280;
+}
+.resource-history-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #F3F4F6;
+}
+.resource-lock-panel {
+    padding: 12px 20px;
+    background: #FFFBEB;
+    border-bottom: 1px solid #FDE68A;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.resource-lock-panel.open { display: flex; }
+.resource-lock-panel select {
+    padding: 6px 10px;
+    border: 1px solid #FDE68A;
+    border-radius: 6px;
+    font-size: 12px;
+}
+.resource-preview-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #2563EB;
+    cursor: pointer;
+    margin-right: 8px;
+}
+.resource-preview-btn:hover { text-decoration: underline; }
+.file-preview-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.file-preview-modal.open { display: flex; }
+.file-preview-box {
+    background: #FFFFFF;
+    border-radius: 12px;
+    width: 90vw;
+    height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.file-preview-header {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #E5E7EB;
+}
+.file-preview-iframe {
+    flex: 1;
+    border: none;
+    width: 100%;
+}
+
+.resource-empty {
+    color: #9CA3AF;
+    text-align: center;
+    padding: 42px 20px;
+    font-size: 13px;
+}
+.resource-control-wrap {
+    flex: 1;
+    overflow: auto;
+    padding-bottom: 20px;
+}
+
+.resource-control-table {
+    max-width: none;
+}
+
+.resource-control-table th,
+.resource-control-table td {
+    padding: 11px 16px;
+}
+
+.resource-summary {
+    padding-bottom: 10px;
+}
+.resource-export-btn,
+.resource-analytics-btn,
+.resource-filter-btn {
+    border: 1px solid #BFDBFE;
+    border-radius: 7px;
+    padding: 8px 12px;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+
+.resource-export-btn:hover,
+.resource-analytics-btn:hover,
+.resource-filter-btn:hover {
+    background: #DBEAFE;
+    border-color: #93C5FD;
+}
+
+.resource-filter-btn.active {
+    background: #2563EB;
+    border-color: #2563EB;
+    color: #FFFFFF;
+}
+
+.resource-analytics {
+    display: none;
+    margin: 0 20px 20px;
+    padding: 18px;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+}
+
+.resource-analytics.open {
+    display: block;
+}
+
+.resource-analytics-head {
+    display: flex;
+    align-items: end;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.resource-analytics-title {
+    width: 100%;
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.resource-analytics-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.resource-analytics-field label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6B7280;
+}
+
+.resource-analytics-field input {
+    min-width: 155px;
+    padding: 7px 10px;
+    border: 1px solid #D1D5DB;
+    border-radius: 7px;
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+}
+
+.resource-analytics-field input:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+
+.resource-analytics-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(170px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.resource-analytics-card {
+    padding: 13px 15px;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+}
+
+.resource-analytics-card-label {
+    margin-bottom: 5px;
+    color: #6B7280;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .35px;
+}
+
+.resource-analytics-card-value {
+    color: #2563EB;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.resource-analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(300px, 1fr));
+    gap: 18px;
+}
+
+.resource-analytics-section {
+    min-width: 0;
+}
+
+.resource-analytics-section-title {
+    margin-bottom: 9px;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.resource-analytics-table-wrap {
+    max-height: 320px;
+    overflow: auto;
+    border: 1px solid #E5E7EB;
+    border-radius: 9px;
+}
+
+.resource-analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.resource-analytics-table th {
+    position: sticky;
+    top: 0;
+    padding: 9px 10px;
+    background: #F9FAFB;
+    color: #6B7280;
+    border-bottom: 1px solid #E5E7EB;
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .35px;
+}
+
+.resource-analytics-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #F3F4F6;
+    color: #374151;
+}
+
+.resource-analytics-table tr:last-child td {
+    border-bottom: none;
+}
+
+.resource-analytics-table td:last-child,
+.resource-analytics-table th:last-child {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.resource-analytics-empty {
+    padding: 22px 12px;
+    color: #9CA3AF;
+    text-align: center;
+    font-size: 12px;
+}
+
+@@media (max-width: 950px) {
+    .resource-analytics-cards {
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+    }
+
+    .resource-analytics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.resource-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 20px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E5E7EB;
+    flex-shrink: 0;
+}
+
+.resource-actions-separator {
+    width: 1px;
+    height: 24px;
+    margin: 0 3px;
+    background: #E5E7EB;
+}
+
+.resource-export-btn,
+.resource-analytics-btn,
+.resource-filter-btn {
+    border: 1px solid #BFDBFE;
+    border-radius: 7px;
+    padding: 7px 11px;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.25;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+
+.resource-export-btn:hover,
+.resource-analytics-btn:hover,
+.resource-filter-btn:hover {
+    background: #DBEAFE;
+    border-color: #93C5FD;
+}
+
+.resource-filter-btn.active {
+    background: #2563EB;
+    border-color: #2563EB;
+    color: #FFFFFF;
+}
+
+.resource-analytics {
+    display: none;
+    flex: none;
+    overflow: visible;
+    margin: 14px 20px;
+    padding: 16px;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+}
+
+.resource-analytics.open {
+    display: block;
+}
+
+.resource-analytics-head {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-bottom: 13px;
+    margin-bottom: 13px;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.resource-analytics-title {
+    flex-basis: 100%;
+    color: #111827;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.resource-analytics-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.resource-analytics-field label {
+    color: #6B7280;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.resource-analytics-field input {
+    width: 155px;
+    padding: 7px 9px;
+    border: 1px solid #D1D5DB;
+    border-radius: 7px;
+    background: #FFFFFF;
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+}
+
+.resource-analytics-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.resource-analytics-card {
+    min-width: 0;
+    padding: 12px 14px;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 9px;
+}
+
+.resource-analytics-card-label {
+    overflow: hidden;
+    color: #6B7280;
+    font-size: 10px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.resource-analytics-card-value {
+    margin-top: 5px;
+    color: #2563EB;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.resource-analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+.resource-analytics-section {
+    min-width: 0;
+}
+
+.resource-analytics-section:last-child {
+    grid-column: 1 / -1;
+}
+
+.resource-analytics-section-title {
+    margin-bottom: 8px;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.resource-analytics-table-wrap {
+    max-height: 260px;
+    overflow: auto;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+}
+
+.resource-analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.resource-analytics-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 8px 9px;
+    background: #F9FAFB;
+    border-bottom: 1px solid #E5E7EB;
+    color: #6B7280;
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.resource-analytics-table td {
+    padding: 8px 9px;
+    border-bottom: 1px solid #F3F4F6;
+    color: #374151;
+}
+
+.resource-analytics-table td:last-child,
+.resource-analytics-table th:last-child {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.resource-analytics-empty {
+    padding: 22px !important;
+    color: #9CA3AF !important;
+    text-align: center !important;
+}
+
+@@media (max-width: 1050px) {
+    .resource-analytics-cards {
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+    }
+
+    .resource-analytics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .resource-analytics-section:last-child {
+        grid-column: auto;
+    }
+}
+
+@@media (max-width: 640px) {
+    .resource-actions-bar {
+        align-items: stretch;
+    }
+
+    .resource-actions-bar button {
+        flex: 1 1 auto;
+    }
+
+    .resource-actions-separator {
+        display: none;
+    }
+
+    .resource-analytics-cards {
+        grid-template-columns: 1fr;
+    }
+}
+.resource-view.active {
+    overflow-y: auto;
+}
+
+.resource-control-wrap {
+    flex: none;
+    min-height: 280px;
+    overflow: visible;
+    padding-bottom: 24px;
+}
+
+.resource-analytics {
+    flex-shrink: 0;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ════ LOADING OVERLAY ════════════════════════════════════════════════════ -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Загрузка данных...</div>
+  <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+</div>
+
+<!-- ════ HEADER ═════════════════════════════════════════════════════════════ -->
+<header class="header">
+  <div class="header-logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="7" fill="#2563EB" fill-opacity=".25"/>
+      <path d="M7 8h14M7 14h10M7 20h12" stroke="#60A5FA" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="21" cy="20" r="4" fill="#34D399"/>
+    </svg>
+    <div>
+      <div class="header-title">PMO Навигатор</div>
+      <div class="header-sub">Портфель проектов</div>
+    </div>
+  </div>
+  <div class="header-spacer"></div>
+  <div class="header-user">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+    </svg>
+    <span id="userDisplay">@display</span>
+  </div>
+<button class="header-resource"
+        id="btnResource"
+        type="button"
+        onclick="resourceOpen()">
+    Ресурсный план
+</button>
+  <!-- Портфель -->
+  <button class="header-portfolio" id="btnPortfolio">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <rect x="3" y="4" width="18" height="16" rx="2"/>
+      <line x1="3" y1="9" x2="21" y2="9"/>
+      <line x1="8" y1="4" x2="8" y2="9"/>
+      <line x1="16" y1="4" x2="16" y2="9"/>
+    </svg>
+    Портфель
+  </button>
+  <!-- Запросы на изменение -->
+  <button class="header-cr" id="btnCR">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="9" y1="13" x2="15" y2="13"/>
+      <line x1="9" y1="17" x2="13" y2="17"/>
+    </svg>
+    Запросы на изменение
+  </button>
+  <!-- ПК -->
+  <button class="header-pk" id="btnPK">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    ПК
+  </button>
+  <!-- Справка -->
+  <button class="header-reload" onclick="document.getElementById('helpModal').classList.remove('hidden')">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+      <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    Справка
+  </button>
+  <!-- Обновить -->
+  <button class="header-reload" id="btnReload" onclick="reloadData()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
+      <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+    </svg>
+    Обновить
+  </button>
+</header>
+
+<!-- ════ BODY ════════════════════════════════════════════════════════════════ -->
+<div class="body">
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebarNav">
+    <div class="sidebar-title">Статус</div>
+    <div class="status-list" id="statusList"></div>
+  </nav>
+
+  <!-- ════ ОСНОВНОЙ ВИД ════════════════════════════════════════════════════ -->
+  <div class="main" id="mainView">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Поиск по названию, ID, заказчику, РП..."/>
+      </div>
+      <select class="tb-filter" id="tbDept" onchange="applyToolbarFilters()"><option value="">Отдел</option></select>
+      <select class="tb-filter" id="tbPriority" onchange="applyToolbarFilters()"><option value="">Приоритет</option></select>
+      <select class="tb-filter" id="tbPM" onchange="applyToolbarFilters()"><option value="">Рук. проекта</option></select>
+      <select class="tb-filter" id="tbCustomer" onchange="applyToolbarFilters()"><option value="">Заказчик</option></select>
+      <select class="tb-filter" id="tbCurator" onchange="applyToolbarFilters()"><option value="">Куратор</option></select>
+      <div class="toolbar-info" id="toolbarInfo">—</div>
+    </div>
+    <div class="table-wrap">
+      <table class="projects-table">
+        <thead>
+          <tr>
+            <th class="col-id" data-sort="projectId" style="cursor:pointer" title="Сортировать">ID ↕</th>
+            <th class="col-name" data-sort="name" style="cursor:pointer" title="Сортировать">Проект ↕</th>
+            <th class="col-cust" data-sort="customer" style="cursor:pointer" title="Сортировать">Заказчик / Куратор ↕</th>
+            <th class="col-pm" data-sort="projectManager" style="cursor:pointer" title="Сортировать">Рук. проекта ↕</th>
+            <th data-sort="planEnd" style="cursor:pointer" title="Сортировать">План. дата ↕</th>
+            <th data-sort="status" style="cursor:pointer" title="Сортировать">Статус ↕</th>
+            <th class="col-prio" data-sort="priority" style="cursor:pointer" title="Сортировать">Приоритет ↕</th>
+          </tr>
+        </thead>
+        <tbody id="projectsTbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="resource-view" id="resourceView">
+
+<div class="resource-toolbar">
+    <div class="resource-field">
+        <label for="resourcePeriod">Месяц</label>
+        <input id="resourcePeriod" type="month">
+    </div>
+
+    <div class="resource-field">
+        <label>Вид деятельности</label>
+        <div class="resource-kind-group" id="resourceKindGroup">
+            <button class="resource-kind-btn active" data-kind="Project" type="button"
+                    onclick="resourceSetKind('Project')">Проект</button>
+            <button class="resource-kind-btn" data-kind="Operational" type="button"
+                    onclick="resourceSetKind('Operational')">Операционная</button>
+            <button class="resource-kind-btn" data-kind="Vacation" type="button"
+                    onclick="resourceSetKind('Vacation')">Отпуск</button>
+        </div>
+    </div>
+
+    <div class="resource-field">
+        <label for="resourceEmployee">Сотрудник</label>
+        <select id="resourceEmployee">
+            <option value="">Выберите сотрудника</option>
+        </select>
+    </div>
+
+    <!-- Проект (только для Kind=Project) -->
+    <div class="resource-field" id="resourceProjectField">
+        <label for="resourceProject">Проект</label>
+        <select id="resourceProject">
+            <option value="">Выберите проект</option>
+        </select>
+    </div>
+
+    <!-- Активность (для Operational/Vacation) -->
+    <div class="resource-field" id="resourceActivityField" style="display:none">
+        <label for="resourceActivity">Активность</label>
+        <select id="resourceActivity">
+            <option value="">Выберите</option>
+        </select>
+    </div>
+
+    <div class="resource-field">
+        <label for="resourceHours">Часы</label>
+        <input id="resourceHours" type="number" min="0" step="0.5"
+               placeholder="160" style="width:80px">
+        <div class="resource-hours-hint" id="resourceHoursHint">или введите % ниже</div>
+    </div>
+
+    <div class="resource-field">
+        <label for="resourcePercent">Загрузка, %</label>
+        <input id="resourcePercent" type="number" min="0" max="200" step="0.01"
+               placeholder="25" style="width:80px">
+        <div class="resource-hours-hint" id="resourceCapHint">лимит: 100%</div>
+    </div>
+
+    <div class="resource-field">
+        <label for="resourceComment">Комментарий</label>
+        <input id="resourceComment" type="text" maxlength="2000"
+               placeholder="Необязательно">
+    </div>
+
+    <button class="resource-save" id="btnResourceSave" type="button">
+        Сохранить
+    </button>
+
+    <div class="resource-team-filter">
+        <label style="font-size:11px;font-weight:600;color:#6B7280">Фильтр:</label>
+        <select id="resourceTeamFilter" onchange="resourceLoadPlan()">
+            <option value="">Все сотрудники</option>
+        </select>
+    </div>
+</div>
+
+<!-- Панель блокировки периодов -->
+<div class="resource-lock-panel" id="resourceLockPanel">
+    <span style="font-size:12px;font-weight:600;color:#92400E">Блокировка периода:</span>
+    <select id="resourceLockGroup">
+        <option value="All">Все</option>
+        <option value="Department">По отделу</option>
+        <option value="Sector">По сектору</option>
+    </select>
+    <select id="resourceLockValue" style="min-width:200px">
+        <option value="*">Все сотрудники</option>
+    </select>
+    <button class="resource-lock-btn" onclick="resourceSetLock(true)"
+            style="background:rgba(239,68,68,.15);color:#DC2626;border-color:rgba(239,68,68,.35)">
+        🔒 Закрыть редактирование
+    </button>
+    <button class="resource-lock-btn" onclick="resourceSetLock(false)"
+            style="background:rgba(16,185,129,.15);color:#059669;border-color:rgba(16,185,129,.35)">
+        🔓 Открыть редактирование
+    </button>
+    <button onclick="document.getElementById('resourceLockPanel').classList.remove('open')"
+            style="margin-left:auto;border:none;background:none;cursor:pointer;font-size:18px;color:#9CA3AF">×</button>
+</div>
+
+<div class="resource-actions-bar">
+    <button
+        class="resource-filter-btn"
+        id="btnResourceOnlyEmpty"
+        type="button">
+        Только незаполненные
+    </button>
+
+    <div class="resource-actions-separator"></div>
+
+    <button
+        class="resource-export-btn"
+        id="btnResourceCsv"
+        type="button">
+        Скачать CSV
+    </button>
+
+    <button
+        class="resource-export-btn"
+        id="btnResourceExcel"
+        type="button">
+        Скачать Excel
+    </button>
+
+    <button
+        class="resource-history-btn"
+        id="btnResourceHistory"
+        type="button">
+        📜 История
+    </button>
+
+    <button
+        class="resource-lock-btn"
+        id="btnResourceLock"
+        type="button">
+        🔒 Блокировки
+    </button>
+
+    <button
+        class="resource-analytics-btn"
+        id="btnResourceAnalytics"
+        type="button">
+        Аналитика
+    </button>
+</div>
+
+
+    <div class="resource-message" id="resourceMessage"></div>
+
+    <div class="resource-summary" id="resourceSummary"></div>
+    <div class="resource-analytics" id="resourceAnalytics">
+    <div class="resource-analytics-head">
+        <div class="resource-analytics-title">
+            Аналитика ресурсного плана
+        </div>
+
+        <div class="resource-analytics-field">
+            <label for="resourceAnalyticsFrom">Период с</label>
+            <input id="resourceAnalyticsFrom" type="month">
+        </div>
+
+        <div class="resource-analytics-field">
+            <label for="resourceAnalyticsTo">Период по</label>
+            <input id="resourceAnalyticsTo" type="month">
+        </div>
+
+        <button
+            class="resource-analytics-btn"
+            id="btnResourceAnalyticsLoad"
+            type="button">
+            Обновить
+        </button>
+    </div>
+
+    <div class="resource-analytics-cards">
+        <div class="resource-analytics-card">
+            <div class="resource-analytics-card-label">Назначений</div>
+            <div class="resource-analytics-card-value" id="analyticsItemsCount">0</div>
+        </div>
+
+        <div class="resource-analytics-card">
+            <div class="resource-analytics-card-label">Сотрудников</div>
+            <div class="resource-analytics-card-value" id="analyticsEmployeesCount">0</div>
+        </div>
+
+        <div class="resource-analytics-card">
+            <div class="resource-analytics-card-label">Проектов</div>
+            <div class="resource-analytics-card-value" id="analyticsProjectsCount">0</div>
+        </div>
+
+        <div class="resource-analytics-card">
+            <div class="resource-analytics-card-label">Суммарная загрузка</div>
+            <div class="resource-analytics-card-value" id="analyticsTotalPercent">0%</div>
+        </div>
+    </div>
+
+    <div class="resource-analytics-grid">
+        <div class="resource-analytics-section">
+            <div class="resource-analytics-section-title">
+                Загрузка по проектам
+            </div>
+
+            <div class="resource-analytics-table-wrap">
+                <table class="resource-analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Проект</th>
+                            <th>Сотрудников</th>
+                            <th>Загрузка</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analyticsProjectsTbody">
+                        <tr>
+                            <td colspan="3" class="resource-analytics-empty">
+                                Выберите период и нажмите «Обновить».
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="resource-analytics-section">
+            <div class="resource-analytics-section-title">
+                Загрузка по сотрудникам
+            </div>
+
+            <div class="resource-analytics-table-wrap">
+                <table class="resource-analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Сотрудник</th>
+                            <th>Проектов</th>
+                            <th>Загрузка</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analyticsEmployeesTbody">
+                        <tr>
+                            <td colspan="3" class="resource-analytics-empty">
+                                Выберите период и нажмите «Обновить».
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="resource-analytics-section">
+            <div class="resource-analytics-section-title">
+                Динамика по месяцам
+            </div>
+
+            <div class="resource-analytics-table-wrap">
+                <table class="resource-analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Месяц</th>
+                            <th>Сотрудников</th>
+                            <th>Проектов</th>
+                            <th>Загрузка</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analyticsMonthsTbody">
+                        <tr>
+                            <td colspan="4" class="resource-analytics-empty">
+                                Нет данных.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+    <div class="resource-control-title">
+    Контроль заполнения по сотрудникам
+</div>
+
+<div class="resource-control-wrap">
+    <table class="resource-control-table">
+        <thead>
+            <tr>
+                <th>Сотрудник</th>
+                <th>Отдел / Сектор</th>
+                <th>Ставка</th>
+                <th>Лимит</th>
+                <th>Итоговая загрузка</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody id="resourceControlTbody"></tbody>
+    </table>
+</div>
+
+
+
+</div>
+<aside class="resource-person-panel" id="resourcePersonPanel">
+    <div class="resource-person-head">
+        <div class="resource-person-head-info">
+            <div class="resource-person-period" id="resourcePersonPeriod"></div>
+            <div class="resource-person-name" id="resourcePersonName"></div>
+        </div>
+
+        <button class="resource-person-close"
+                type="button"
+                onclick="resourceClosePerson()"
+                title="Закрыть">
+            ×
+        </button>
+    </div>
+
+    <div class="resource-person-body">
+        <div class="resource-person-total">
+            <span class="resource-person-total-label">Итоговая загрузка</span>
+            <span class="resource-person-total-value" id="resourcePersonTotal">0%</span>
+        </div>
+
+        <div class="resource-person-list-title">Назначения на месяц</div>
+        <div id="resourcePersonItems"></div>
+
+        <button class="resource-person-add"
+                type="button"
+                onclick="resourceAddForPerson()">
+            + Добавить проект
+        </button>
+    </div>
+</aside>
+  <!-- ════ ВИД ПОРТФЕЛЬ ════════════════════════════════════════════════════ -->
+  <div class="portfolio-view" id="portfolioView">
+    <!-- Фильтры -->
+    <div class="pf-filters">
+      <label>Статус</label>
+      <select class="pf-select" id="pfStatus" onchange="renderPortfolioGantt()">
+        <option value="">Все</option>
+      </select>
+
+      <label>Отдел</label>
+      <select class="pf-select" id="pfDept" onchange="renderPortfolioGantt()">
+        <option value="">Все</option>
+      </select>
+
+      <label>Приоритет</label>
+      <select class="pf-select" id="pfPriority" onchange="renderPortfolioGantt()">
+        <option value="">Все</option>
+      </select>
+
+      <label>Заказчик</label>
+      <select class="pf-select" id="pfCustomer" onchange="renderPortfolioGantt()">
+        <option value="">Все</option>
+      </select>
+
+      <label>Рук. проекта</label>
+      <select class="pf-select" id="pfPM" onchange="renderPortfolioGantt()">
+        <option value="">Все</option>
+      </select>
+
+      <label>Куратор</label>
+      <select class="pf-select" id="pfCurator" onchange="renderPortfolioGantt()">
+        <option value="">Все</option>
+      </select>
+
+      <div class="pf-sep"></div>
+
+      <label class="pf-checkbox-wrap">
+        <input type="checkbox" id="pfOnlyActive" onchange="renderPortfolioGantt()"> Только активные
+      </label>
+
+      <div class="pf-sep"></div>
+
+      <div class="pf-scale-group">
+        <span style="font-size:11px;color:#6B7280;font-weight:600;margin-right:2px">Масштаб:</span>
+        <button class="pf-scale-btn" id="scaleQ" onclick="setScale('quarter')">Квартал</button>
+        <button class="pf-scale-btn active" id="scaleH" onclick="setScale('half')">Полугодие</button>
+        <button class="pf-scale-btn" id="scaleY" onclick="setScale('year')">Год</button>
+        <button class="pf-scale-btn" id="scaleAll" onclick="setScale('all')">Весь портфель</button>
+      </div>
+
+      <button class="pf-reset" onclick="resetPortfolioFilters()">Сбросить фильтры</button>
+      <span class="pf-count" id="pfCount"></span>
+    </div>
+
+    <!-- Ганта -->
+    <div class="portfolio-gantt-wrap" id="portfolioGanttWrap">
+      <div class="pg-container" id="portfolioGantt"></div>
+    </div>
+
+    <!-- Легенда -->
+    <div class="pg-legend">
+      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#4F46E5"></div>Выполнение и контроль</div>
+      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#2563EB"></div>Планирование</div>
+      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#D97706"></div>На паузе</div>
+      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#0284C7"></div>Завершение</div>
+      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#9CA3AF"></div>Завершён</div>
+      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#DC2626"></div>Просрочен / Отменён</div>
+      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#DC2626;opacity:.6;border:1px solid #DC2626"></div>Сегодня</div>
+    </div>
+  </div>
+
+  <!-- ════ ВИД ЗАПРОСЫ НА ИЗМЕНЕНИЕ ════════════════════════════════════════ -->
+  <div class="cr-view" id="crView">
+    <div class="cr-header-bar">
+      <div>
+        <div class="cr-header-title">Запросы на изменение</div>
+        <div class="cr-header-sub">Документы по проектам из папок жизненного цикла</div>
+      </div>
+      <label style="font-size:11px;color:#6B7280;font-weight:600;margin-left:16px">Проект</label>
+      <select class="cr-filter" id="crFilterProject" onchange="renderCRTable()" style="max-width:320px">
+        <option value="">Все проекты</option>
+      </select>
+      <span class="cr-count" id="crCount"></span>
+    </div>
+    <div class="cr-table-wrap">
+      <table class="cr-table">
+        <thead>
+          <tr>
+            <th style="width:60px">ID</th>
+            <th style="width:200px">Проект</th>
+            <th>Документ</th>
+            <th style="width:160px">Этап</th>
+            <th style="width:110px">Изменён</th>
+            <th style="width:90px">Действие</th>
+          </tr>
+        </thead>
+        <tbody id="crTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════ ВИД ПК (Проектный Комитет) ════════════════════════════════════ -->
+  <div class="pk-view" id="pkView">
+    <!-- Счётчики -->
+    <div class="pk-counters" id="pkCounters">
+      <div class="pk-counter-card pk-counter-all">
+        <div class="pk-counter-label">Всего проектов</div>
+        <div class="pk-counter-value" id="cntAll">—</div>
+      </div>
+      <div class="pk-counter-card pk-counter-work">
+        <div class="pk-counter-label">Проекты в работе</div>
+        <div class="pk-counter-value" id="cntWork">—</div>
+      </div>
+      <div class="pk-counter-card pk-counter-red">
+        <div class="pk-counter-label">Красные</div>
+        <div class="pk-counter-value" id="cntRed">—</div>
+      </div>
+      <div class="pk-counter-card pk-counter-yellow">
+        <div class="pk-counter-label">Жёлтые</div>
+        <div class="pk-counter-value" id="cntYellow">—</div>
+      </div>
+      <div class="pk-counter-card pk-counter-pause">
+        <div class="pk-counter-label">На паузе</div>
+        <div class="pk-counter-value" id="cntPause">—</div>
+      </div>
+      <div class="pk-counter-card pk-counter-deadline">
+        <div class="pk-counter-label">Жёсткие дедлайны</div>
+        <div class="pk-counter-value" id="cntDeadline">—</div>
+      </div>
+    </div>
+    <!-- Диаграммы -->
+    <!-- Карусель/вкладки для дашбордов ПК -->
+    <div class="pk-chart-tabs" style="display:flex;gap:0;margin-bottom:0;border-bottom:2px solid #E5E7EB;overflow-x:auto">
+      <button class="pk-chart-tab active" data-pkchart="health" onclick="pkChartSwitch('health')"
+              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid #2563EB;color:#2563EB;white-space:nowrap">
+        Здоровье портфеля</button>
+      <button class="pk-chart-tab" data-pkchart="type" onclick="pkChartSwitch('type')"
+              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#6B7280;white-space:nowrap">
+        По типам проектов</button>
+      <button class="pk-chart-tab" data-pkchart="dept" onclick="pkChartSwitch('dept')"
+              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#6B7280;white-space:nowrap">
+        По отделам</button>
+      <button class="pk-chart-tab" data-pkchart="scoring" onclick="pkChartSwitch('scoring')"
+              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#6B7280;white-space:nowrap">
+        Скоринг (матрица)</button>
+    </div>
+
+    <div class="pk-charts-row" id="pkChartsRow">
+      <!-- Здоровье портфеля -->
+      <div class="pk-chart-pane" data-pane="health" style="display:flex;gap:24px;flex-wrap:wrap;padding:20px">
+        <div class="pk-chart-card" style="max-width:480px">
+          <div class="pk-chart-title">Здоровье портфеля</div>
+          <canvas id="chartHealth" width="200" height="200"></canvas>
+          <div class="pk-chart-legend" id="legendHealth"></div>
+        </div>
+        <div class="pk-chart-card" style="max-width:480px">
+          <div class="pk-chart-title">Статус проекта</div>
+          <canvas id="chartStatus" width="200" height="200"></canvas>
+          <div class="pk-chart-legend" id="legendStatus"></div>
+        </div>
+      </div>
+
+      <!-- По типам -->
+      <div class="pk-chart-pane" data-pane="type" style="display:none;padding:20px">
+        <div class="pk-chart-card">
+          <div class="pk-chart-title">Распределение по типам проектов</div>
+          <canvas id="chartProjectType" width="300" height="200"></canvas>
+          <div class="pk-chart-legend" id="legendProjectType"></div>
+        </div>
+      </div>
+
+      <!-- По отделам -->
+      <div class="pk-chart-pane" data-pane="dept" style="display:none;padding:20px">
+        <div class="pk-chart-card" style="width:100%">
+          <div class="pk-chart-title">Загрузка и здоровье по отделам</div>
+          <canvas id="chartByDept" width="600" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- Скоринг -->
+      <div class="pk-chart-pane" data-pane="scoring" style="display:none;padding:20px">
+        <div class="pk-chart-card" style="width:100%">
+          <div class="pk-chart-title">Матрица скоринга: Сложность/Риски × Стратегическое соответствие</div>
+          <canvas id="chartScoring" width="700" height="400"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Шапка -->
+    <div class="pk-header-bar">
+      <div>
+        <div class="pk-header-title">Проектный Комитет</div>
+        <div class="pk-header-sub">Активные проекты портфеля</div>
+      </div>
+      <div style="position:relative;flex:1;max-width:260px">
+        <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#9CA3AF;pointer-events:none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="pk-filter" id="pkSearch" type="text" placeholder="ID или название..." oninput="renderPKTable()" style="padding-left:28px;width:100%">
+      </div>
+      <label style="font-size:11px;color:#6B7280;font-weight:600;margin-left:8px">Статус</label>
+      <select class="pk-filter" id="pkFilterStatus" onchange="renderPKTable()">
+        <option value="">Все активные</option>
+        <option value="red">Красный</option>
+        <option value="yellow">Жёлтый</option>
+        <option value="green">Зелёный</option>
+      </select>
+      <label style="font-size:11px;color:#6B7280;font-weight:600">Заказчик</label>
+      <select class="pk-filter" id="pkFilterCustomer" onchange="renderPKTable()">
+        <option value="">Все</option>
+      </select>
+      <span class="pk-count" id="pkCount"></span>
+    </div>
+
+    <!-- Таблица -->
+    <div class="pk-table-wrap">
+      <table class="pk-table">
+        <thead>
+          <tr>
+            <th style="cursor:pointer" onclick="pkSort('name')" title="Сортировать">Проект <span id="pkSortName">↕</span></th>
+            <th style="width:160px">Заказчик / РП</th>
+            <th style="width:70px">Статус</th>
+            <th style="width:110px">Обязательства</th>
+            <th style="width:110px">Срок завершения</th>
+            <th style="width:80px;cursor:pointer" onclick="pkSort('score')" title="Сортировать">Скоринг <span id="pkSortScore">↕</span></th>
+            <th style="width:80px">Бюджет</th>
+            <th class="pk-comment-cell">Ключевой комментарий</th>
+          </tr>
+        </thead>
+        <tbody id="pkTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Detail panel -->
+  <aside class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <div class="detail-header-info">
+        <div class="detail-id" id="dId"></div>
+        <div class="detail-name" id="dName"></div>
+      </div>
+      <button class="detail-close" onclick="closeDetail()" title="Закрыть">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="detail-body">
+      <div class="detail-section">
+        <div class="detail-grid">
+          <div class="detail-field"><label>Статус</label><span id="dStatus"></span></div>
+          <div class="detail-field"><label>Приоритет</label><span id="dPriority"></span></div>
+          <div class="detail-field"><label>Заказчик</label><span id="dCustomer"></span></div>
+          <div class="detail-field"><label>Рук. проекта</label><span id="dPM"></span></div>
+          <div class="detail-field"><label>Плановое начало</label><span id="dPlanStart"></span></div>
+          <div class="detail-field"><label>Плановое окончание</label><span id="dPlanEnd"></span></div>
+          <div class="detail-field"><label>Факт. начало</label><span id="dFactStart"></span></div>
+          <div class="detail-field"><label>Факт. окончание</label><span id="dFactEnd"></span></div>
+          <div class="detail-field"><label>Отдел</label><span id="dDept"></span></div>
+          <div class="detail-field"><label>Тип</label><span id="dType"></span></div>
+          <div class="detail-field"><label>Куратор</label><span id="dCurator"></span></div>
+          <div class="detail-field"><label>Стратег. важность</label><span id="dStrategic"></span></div>
+          <div class="detail-field"><label>Скоринг (балл)</label><span id="dScore"></span></div>
+          <div class="detail-field"><label>Жёсткий дедлайн</label><span id="dHardDeadline"></span></div>
+        </div>
+      </div>
+      <div class="detail-section" id="dGoalSection">
+        <div class="detail-section-title">Цель проекта</div>
+        <div class="detail-goal" id="dGoal"></div>
+      </div>
+      <div class="detail-tabs">
+        <button class="dtab active" data-tab="members">Команда</button>
+        <button class="dtab" data-tab="docs">Документы</button>
+        <button class="dtab" data-tab="completeness">Полнота</button>
+        <button class="dtab" data-tab="gantt">Ганта</button>
+        <button class="dtab" data-tab="links">Ссылки</button>
+      </div>
+      <div class="dtab-content active" id="tab-members">
+        <div id="membersList"></div>
+      </div>
+      <div class="dtab-content" id="tab-docs">
+        <div id="docsList"></div>
+      </div>
+      <div class="dtab-content" id="tab-completeness">
+        <div id="completenessList"></div>
+      </div>
+      <div class="dtab-content" id="tab-gantt">
+        <div id="ganttChart"></div>
+      </div>
+      <div class="dtab-content" id="tab-links">
+        <div id="linksList"></div>
+      </div>
+    </div>
+  </aside>
+
+</div><!-- /body -->
+</div><!-- /app -->
+
+<!-- ════ СПРАВКА ════════════════════════════════════════════════════════════ -->
+<div class="modal-backdrop hidden" id="helpModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-head-title">PMO Навигатор — справка</div>
+      <button class="modal-head-close"
+        onclick="document.getElementById('helpModal').classList.add('hidden')">&times;</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="help-section">
+        <div class="help-section-title">Что это такое</div>
+        <p>Навигатор по портфелю проектов PMO. Позволяет быстро найти нужный проект,
+        увидеть его статус, команду, сроки и документы — без входа в Service Desk
+        и без лицензии Qlik. Данные автоматически загружаются из CSV-выгрузки.</p>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Список проектов</div>
+        <ul>
+          <li><b>Фильтр по статусу</b> — в левой панели. Цифра рядом — количество проектов.</li>
+          <li><b>Поиск</b> — по названию, ID, заказчику, руководителю проекта или отделу.</li>
+          <li><b>Клик на строку</b> — открывает карточку проекта справа.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Вкладка «Портфель»</div>
+        <ul>
+          <li><b>Диаграмма Ганта</b> по всем проектам портфеля на одном экране.</li>
+          <li><b>Фильтры</b>: статус, отдел, приоритет, заказчик, руководитель проекта.</li>
+          <li><b>Только активные</b> — скрывает завершённые и отменённые проекты.</li>
+          <li><b>Масштаб</b>: Квартал (3 мес), Полугодие (6 мес), Год (12 мес), <b>Весь портфель</b> (все даты из CSV).</li>
+          <li><b>Красная вертикальная линия</b> — сегодняшняя дата.</li>
+          <li><b>Красные полосы</b> — просроченные проекты (план. окончание в прошлом, статус не «Завершён»/«Отменён»).</li>
+          <li><b>Клик на строку</b> — открывает карточку проекта.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Вкладка «ПК»</div>
+        <ul>
+          <li><b>Таблица Проектного Комитета</b> — активные проекты с RAG-статусом.</li>
+          <li><b>Красный</b> — срок завершения уже прошёл.</li>
+          <li><b>Жёлтый</b> — срок завершается в течение 30 дней.</li>
+          <li><b>Зелёный</b> — срок не критичный.</li>
+          <li><b>Клик на строку</b> — открывает карточку проекта.</li>
+          <li><b>Комментарий</b> — кликните на ячейку комментария, введите текст и нажмите «Сохранить».</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Карточка проекта — вкладки</div>
+        <table class="help-table">
+          <tr><td>Команда</td><td>Все участники проекта с указанием роли (куратор, РП, заказчик и др.)</td></tr>
+          <tr><td>Документы</td><td>Файлы из сетевой папки проекта. Кликните на файл — откроется в программе.</td></tr>
+          <tr><td>Ганта</td><td>Визуальная шкала плановых и фактических сроков. Красная линия — сегодня.</td></tr>
+          <tr><td>Ссылки</td><td>Прямая ссылка на проект в Service Desk.</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Цветовые обозначения статусов</div>
+        <table class="help-table">
+          <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#22c55e;margin-right:6px"></span>Выполнение и контроль</td><td>Проект активно выполняется</td></tr>
+          <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#eab308;margin-right:6px"></span>На паузе</td><td>Работы временно приостановлены</td></tr>
+          <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#a855f7;margin-right:6px"></span>Инициация / Планирование</td><td>Проект в начальной стадии</td></tr>
+          <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#3b82f6;margin-right:6px"></span>Завершение / В бэклоге</td><td>Финальная стадия или ожидание старта</td></tr>
+          <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#9ca3af;border:1px solid #d1d5db;margin-right:6px"></span>Завершён</td><td>Проект закрыт</td></tr>
+          <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#ef4444;margin-right:6px"></span>Отменён</td><td>Проект прекращён</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Обновление данных</div>
+        <p>Кнопка <b>Обновить</b> в правом верхнем углу перечитывает файлы
+        <code>projects.csv</code> и <code>members.csv</code> из папки
+        <code>wwwroot/data/</code> без перезапуска приложения.
+        Нажимайте после того как выгрузили свежие данные из Qlik или вручную обновили CSV.</p>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button onclick="document.getElementById('helpModal').classList.add('hidden')">Понятно</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const BASE = window.location.pathname.startsWith('/pmo') ? '/pmo' : '';
+// ════ СОСТОЯНИЕ ═════════════════════════════════════════════════════════════
+let currentStatus = 'Все';
+let currentSearch = '';
+let selectedId    = null;
+let allProjects   = [];
+let statusCounts  = {};
+let portfolioScale = 'half'; // 'quarter' | 'half' | 'year'
+let portfolioViewActive = false;
+let pkViewActive = false;
+let crViewActive = false;
+let pkComments = {}; // { projectId: "comment text" }
+let pkSortField = 'rag';  // 'rag' | 'name' | 'score'
+let pkSortDir   = 'desc'; // для скоринга по умолчанию — высокий вверху
+let tbFilters = { dept: '', priority: '', pm: '', customer: '', curator: '' };
+let sortField = 'projectId';
+let sortAsc   = true;
+
+// ════ ИНИЦИАЛИЗАЦИЯ ══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+    animateProgress(0, 30, 400);
+    await loadProjects();
+    animateProgress(30, 100, 300);
+    setTimeout(() => {
+        document.getElementById('loadingOverlay').classList.add('hidden');
+    }, 400);
+
+    let searchTimer;
+    document.getElementById('searchInput').addEventListener('input', e => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            currentSearch = e.target.value.trim();
+            renderTable();
+        }, 200);
+    });
+
+    document.querySelectorAll('.dtab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tab = btn.dataset.tab;
+            document.querySelectorAll('.dtab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            document.querySelectorAll('.dtab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+        });
+    });
+
+    // Сортировка по клику на заголовок
+    document.querySelectorAll('.projects-table th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+            const field = th.dataset.sort;
+            if (sortField === field) sortAsc = !sortAsc;
+            else { sortField = field; sortAsc = true; }
+            document.querySelectorAll('.projects-table th').forEach(t => t.classList.remove('sort-asc','sort-desc'));
+            th.classList.add(sortAsc ? 'sort-asc' : 'sort-desc');
+            renderTable();
+        });
+    });
+    // Подсветить начальную колонку
+    const initTh = document.querySelector('.projects-table th[data-sort="projectId"]');
+    if (initTh) initTh.classList.add('sort-asc');
+
+    // Закрытие справки по клику на фон
+    document.getElementById('helpModal').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.add('hidden');
+    });
+});
+
+function animateProgress(from, to, ms) {
+    const bar = document.getElementById('progressBar');
+    const step = (to - from) / (ms / 16);
+    let cur = from;
+    const t = setInterval(() => {
+        cur = Math.min(cur + step, to);
+        bar.style.width = cur + '%';
+        if (cur >= to) clearInterval(t);
+    }, 16);
+}
+
+// ════ ЗАГРУЗКА ДАННЫХ ════════════════════════════════════════════════════════
+async function loadProjects() {
+    try {
+        const res = await fetch(BASE+'/api/projects?status=Все');
+        const data = await res.json();
+        allProjects = data.items || [];
+        buildStatusCounts();
+        renderSidebar();
+        renderTable();
+        buildPortfolioSelects();
+        buildToolbarSelects();
+        await loadPKComments();
+    } catch (e) {
+        console.error('Ошибка загрузки:', e);
+    }
+}
+
+async function reloadData() {
+    const btn = document.getElementById('btnReload');
+    btn.classList.add('loading');
+    try {
+        await fetch(BASE+'/api/projects/reload', { method: 'POST' });
+        await loadProjects();
+        if (selectedId) loadDetail(selectedId);
+        if (portfolioViewActive) renderPortfolioGantt();
+        if (pkViewActive) { renderPKTable(); updatePKCounters(); updatePKCharts(); }
+        if (crViewActive) renderCRTable();
+    } finally {
+        btn.classList.remove('loading');
+    }
+}
+
+// ════ СЧЁТЧИКИ СТАТУСОВ ══════════════════════════════════════════════════════
+function buildStatusCounts() {
+    statusCounts = { 'Все': allProjects.length };
+    for (const p of allProjects) {
+        statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
+    }
+}
+
+// ════ SIDEBAR ════════════════════════════════════════════════════════════════
+const STATUS_ORDER = [
+    'Все','Выполнение и контроль','Инициация','Планирование',
+    'На паузе (On-Hold)','Завершение','Утвержден (В бэклоге)',
+    'Отложен','Завершён','Отменён',
+];
+
+function renderSidebar() {
+    const list = document.getElementById('statusList');
+    list.innerHTML = '';
+    const statuses = STATUS_ORDER.filter(s => s === 'Все' || statusCounts[s]);
+    for (const s of Object.keys(statusCounts)) {
+        if (!STATUS_ORDER.includes(s)) statuses.push(s);
+    }
+    for (const s of statuses) {
+        if (!statusCounts[s] && s !== 'Все') continue;
+        const btn = document.createElement('button');
+        btn.className = 'status-btn' + (currentStatus === s ? ' active' : '');
+        btn.innerHTML = `<span class="label">${s}</span><span class="cnt">${statusCounts[s] || 0}</span>`;
+        btn.onclick = () => {
+            currentStatus = s;
+            document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderTable();
+        };
+        list.appendChild(btn);
+        if (s === 'Все') {
+            const sep = document.createElement('div');
+            sep.className = 'sidebar-sep';
+            list.appendChild(sep);
+        }
+    }
+}
+
+// ════ ТАБЛИЦА ════════════════════════════════════════════════════════════════
+function filtered() {
+    let list = allProjects;
+    if (currentStatus !== 'Все') list = list.filter(p => p.status === currentStatus);
+    if (tbFilters.dept)     list = list.filter(p => p.department     === tbFilters.dept);
+    if (tbFilters.priority) list = list.filter(p => p.priority       === tbFilters.priority);
+    if (tbFilters.pm)       list = list.filter(p => p.projectManager === tbFilters.pm);
+    if (tbFilters.customer) list = list.filter(p => p.customer       === tbFilters.customer);
+    if (tbFilters.curator)  list = list.filter(p => p.curator        === tbFilters.curator);
+    if (currentSearch) {
+        const q = currentSearch.toLowerCase();
+        list = list.filter(p =>
+            p.name.toLowerCase().includes(q) ||
+            String(p.projectId).includes(q) ||
+            (p.customer || '').toLowerCase().includes(q) ||
+            (p.projectManager || '').toLowerCase().includes(q) ||
+            (p.department || '').toLowerCase().includes(q)
+        );
+    }
+    // Сортировка
+    list = list.slice().sort((a, b) => {
+        let va = a[sortField] ?? '';
+        let vb = b[sortField] ?? '';
+        if (sortField === 'projectId') { va = Number(va); vb = Number(vb); }
+        else if (sortField === 'planEnd' || sortField === 'planStart') {
+            va = va && va !== '-' ? new Date(va).getTime() : 0;
+            vb = vb && vb !== '-' ? new Date(vb).getTime() : 0;
+        } else {
+            va = String(va).toLowerCase();
+            vb = String(vb).toLowerCase();
+        }
+        if (va < vb) return sortAsc ? -1 : 1;
+        if (va > vb) return sortAsc ? 1 : -1;
+        return 0;
+    });
+    return list;
+}
+
+function renderTable() {
+    const list = filtered();
+    const tbody = document.getElementById('projectsTbody');
+    document.getElementById('toolbarInfo').textContent =
+        `Проектов: ${list.length}${allProjects.length !== list.length ? ' из ' + allProjects.length : ''}`;
+
+    if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7"
+          style="text-align:center;padding:40px;color:#9CA3AF">Проектов не найдено</td></tr>`;
+        return;
+    }
+
+    const todayMs = new Date().setHours(0,0,0,0);
+    tbody.innerHTML = list.map(p => {
+        const isOverdueRow = p.planEnd && p.planEnd !== '-'
+            && new Date(p.planEnd).getTime() < todayMs
+            && p.status !== 'Завершён' && p.status !== 'Отменён';
+        const rowClass = [
+            selectedId === p.projectId ? 'selected' : '',
+            isOverdueRow ? 'row-overdue' : ''
+        ].filter(Boolean).join(' ');
+        return `
+      <tr onclick="loadDetail(${p.projectId})" class="${rowClass}">
+        <td class="col-id">${p.projectId}</td>
+        <td class="col-name">
+          <div class="p-name">${esc(p.name)}</div>
+          ${p.department ? `<div class="p-dept">${esc(p.department)}</div>` : ''}
+        </td>
+        <td class="col-cust">
+          <div>${esc(p.customer || '—')}</div>
+          ${p.curator && p.curator !== '-' ? `<div class="p-dept">${esc(p.curator)}</div>` : ''}
+        </td>
+        <td class="col-pm">${esc(p.projectManager || '—')}</td>
+        <td class="col-dates">${formatDateRange(p.planStart, p.planEnd)}</td>
+        <td>${statusBadge(p.status)}</td>
+        <td class="col-prio">${priorityHtml(p.priority)}</td>
+      </tr>`;
+    }).join('');
+}
+
+// ════ КАРТОЧКА ПРОЕКТА ═══════════════════════════════════════════════════════
+async function loadDetail(id) {
+    selectedId = id;
+    // Переключиться на основной вид если открыт портфель или ПК
+    if (portfolioViewActive) showMain();
+    if (pkViewActive) showMain();
+    renderTable();
+
+    document.querySelectorAll('.dtab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'members'));
+    document.querySelectorAll('.dtab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-members'));
+    document.getElementById('detailPanel').classList.add('open');
+
+    try {
+        const res = await fetch(BASE+`/api/projects/${id}`);
+        const p   = await res.json();
+
+        document.getElementById('dId').textContent       = `Проект № ${p.projectId}`;
+        document.getElementById('dName').textContent     = p.name;
+        document.getElementById('dStatus').innerHTML     = statusBadge(p.status);
+        document.getElementById('dPriority').innerHTML   = priorityHtml(p.priority);
+        document.getElementById('dCustomer').textContent = p.customer || '—';
+        document.getElementById('dPM').textContent       = p.projectManager || '—';
+        document.getElementById('dPlanStart').textContent= fmtDate(p.planStart);
+        document.getElementById('dPlanEnd').textContent  = fmtDate(p.planEnd);
+        document.getElementById('dFactStart').textContent= fmtDate(p.factStart);
+        document.getElementById('dFactEnd').textContent  = fmtDate(p.factEnd);
+        document.getElementById('dDept').textContent     = p.department || '—';
+        document.getElementById('dType').textContent     = p.typeProject || '—';
+        document.getElementById('dCurator').textContent      = p.curator || '—';
+        document.getElementById('dStrategic').textContent    = p.strategicImportance || '—';
+        const scoreVal = parseFloat(p.totalScore);
+        if (!isNaN(scoreVal)) {
+            const scoreCls = scoreVal >= 3 ? 'score-high' : scoreVal >= 2 ? 'score-mid' : 'score-low';
+            document.getElementById('dScore').innerHTML = `<span class="score-badge ${scoreCls}">${p.totalScore}</span>`;
+        } else {
+            document.getElementById('dScore').textContent = '—';
+        }
+        document.getElementById('dHardDeadline').textContent = p.hardDeadline && p.hardDeadline !== '-'
+            ? (p.hardDeadline + (p.deadlineDate && p.deadlineDate !== '-' ? ' — ' + fmtDate(p.deadlineDate) : ''))
+            : '—';
+
+        const goal = (p.goal || '').trim();
+        document.getElementById('dGoalSection').style.display = goal ? '' : 'none';
+        document.getElementById('dGoal').textContent = goal;
+
+        // Команда
+        const mList = document.getElementById('membersList');
+        mList.innerHTML = p.members && p.members.length > 0
+            ? p.members.map(m => `
+                <div class="member-row">
+                  <div class="member-avatar">${initials(m.person)}</div>
+                  <div class="member-info">
+                    <div class="member-name">${esc(m.person)}</div>
+                    <div class="member-role">${esc(m.role)}</div>
+                  </div>
+                </div>`).join('')
+            : '<div class="doc-empty">Участники не указаны</div>';
+
+        // Документы
+        const dList = document.getElementById('docsList');
+        // Путь проекта в заголовке
+        const projPath = `${p.projectId}_${esc(p.name)}`;
+        const pathHtml = `<div style="font-size:11px;color:#9CA3AF;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px">📂</span>
+          <span style="font-weight:600;color:#6B7280">${projPath}</span>
+        </div>`;
+        if (p.folders && p.folders.length > 0) {
+            const foldersHtml = p.folders.map(folder => {
+                const cnt = (folder.files || []).length;
+                const cntCls = cnt > 0 ? 'has-files' : 'no-files';
+                const filesHtml = cnt > 0
+                    ? folder.files.map(d => `
+                        <div class="doc-row" style="display:flex;align-items:center;gap:8px">
+                          <div class="doc-icon ${esc(d.ext)}" style="cursor:pointer" onclick="openFile('${esc(d.path)}')">${esc(d.ext.toUpperCase().slice(0,4))}</div>
+                          <div class="doc-name" title="${esc(d.name)}" style="cursor:pointer;flex:1" onclick="openFile('${esc(d.path)}')">${esc(d.name)}</div>
+                          <span class="resource-preview-btn" onclick="event.stopPropagation();openFile('${esc(d.path)}')">👁</span>
+                          <a href="${BASE}/api/file/download?path=${encodeURIComponent(d.path)}" target="_blank"
+                             style="font-size:11px;color:#2563EB;text-decoration:none" onclick="event.stopPropagation()">⬇</a>
+                          <div class="doc-date">${d.modified}</div>
+                        </div>`).join('')
+                    : '<div style="font-size:12px;color:#9CA3AF;text-align:center;padding:10px">Документов нет</div>';
+                return `<div class="doc-folder-group">
+                  <div class="doc-folder-header">
+                    <span class="doc-folder-icon">📁</span>
+                    <span class="doc-folder-title">${esc(folder.name)}</span>
+                    <span class="doc-folder-cnt ${cntCls}">${cnt}</span>
+                  </div>
+                  <div class="doc-folder-body">${filesHtml}</div>
+                </div>`;
+            }).join('');
+            dList.innerHTML = pathHtml + foldersHtml;
+        } else {
+            dList.innerHTML = '<div class="doc-empty">Папка проекта недоступна или пуста.<br>Убедитесь, что сетевой диск подключён.</div>';
+        }
+
+        // Полнота документов
+        renderCompleteness(p);
+
+        // Ссылки
+        const lList = document.getElementById('linksList');
+        lList.innerHTML = p.projectUrl && p.projectUrl !== '-' && p.projectUrl.startsWith('http')
+            ? `<a href="${esc(p.projectUrl)}" target="_blank" class="sd-link">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                Открыть в Service Desk
+              </a>`
+            : '<div class="doc-empty">Ссылок нет</div>';
+
+        // Ганта
+        renderGantt(p);
+
+    } catch (e) {
+        console.error('Ошибка загрузки карточки:', e);
+    }
+}
+
+function closeDetail() {
+    selectedId = null;
+    document.getElementById('detailPanel').classList.remove('open');
+    renderTable();
+}
+
+// ════ ДИАГРАММА ГАНТА (карточка) ═════════════════════════════════════════════
+function renderGantt(p) {
+    const el = document.getElementById('ganttChart');
+    const rows = [];
+
+    const planS = parseRuDate(p.planStart), planE = parseRuDate(p.planEnd);
+    const factS = parseRuDate(p.factStart), factE = parseRuDate(p.factEnd);
+    if (planS && planE) {
+        rows.push({ label: 'План', start: planS, end: planE, cls: 'active' });
+    }
+    if (factS) {
+        rows.push({ label: 'Факт', start: factS, end: factE || new Date(), cls: 'fact' });
+    }
+
+    // Строки по папкам-этапам (последнее изменение файла в папке = дата этапа)
+    const stageColors = ['#7C3AED','#0891B2','#D97706','#059669','#DC2626'];
+    if (p.folders && p.folders.length > 0) {
+        const stageFolders = p.folders.filter(f => f.name !== 'Прочее');
+        stageFolders.forEach((folder, i) => {
+            const files = folder.files || [];
+            if (files.length === 0) return;
+            const dates = files.map(f => {
+                const parts = f.modified.split('.');
+                return parts.length === 3 ? new Date(+parts[2], +parts[1]-1, +parts[0]) : null;
+            }).filter(Boolean);
+            if (dates.length === 0) return;
+            const minF = new Date(Math.min(...dates));
+            const maxF = new Date(Math.max(...dates));
+            const color = stageColors[i % stageColors.length];
+            rows.push({ label: folder.name, start: minF, end: maxF, cls: 'stage', color });
+        });
+    }
+
+    if (rows.length === 0) {
+        el.innerHTML = '<div class="gantt-empty">Даты для проекта не указаны</div>';
+        return;
+    }
+
+    const allDates = rows.flatMap(r => [r.start, r.end]);
+    const minD = new Date(Math.min(...allDates));
+    const maxD = new Date(Math.max(...allDates));
+    minD.setDate(1);
+    maxD.setMonth(maxD.getMonth() + 1, 0);
+    const totalMs  = maxD - minD || 1;
+    const today    = new Date();
+    const todayPct = Math.max(0, Math.min(100, (today - minD) / totalMs * 100));
+
+    const months = [];
+    const cur = new Date(minD);
+    while (cur <= maxD) {
+        months.push(cur.toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' }));
+        cur.setMonth(cur.getMonth() + 2);
+    }
+
+    const axisHtml = `<div class="gantt-axis">${months.map(m => `<span>${m}</span>`).join('')}</div>`;
+
+    const rowsHtml = rows.map(r => {
+        const left  = Math.max(0, (r.start - minD) / totalMs * 100);
+        const width = Math.min(100 - left, Math.max(2, (r.end - r.start) / totalMs * 100));
+        const lbl   = r.start.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
+        const colorStyle = r.color ? `background:${r.color}` : '';
+        return `
+          <div class="gantt-row">
+            <div class="gantt-label" title="${r.label}">${r.label}</div>
+            <div class="gantt-track">
+              <div class="gantt-today" style="left:${todayPct}%" title="Сегодня"></div>
+              <div class="gantt-bar ${r.cls}" style="left:${left}%;width:${width}%;${colorStyle}"
+                   title="${r.start.toLocaleDateString('ru-RU')} — ${r.end.toLocaleDateString('ru-RU')}">${lbl}</div>
+            </div>
+          </div>`;
+    }).join('');
+
+    const legendHtml = `
+      <div class="gantt-legend">
+        <div class="gantt-legend-item">
+          <div class="gantt-legend-dot" style="background:#2563EB"></div>Плановые сроки
+        </div>
+        <div class="gantt-legend-item">
+          <div class="gantt-legend-dot" style="background:#059669"></div>Фактические сроки
+        </div>
+        <div class="gantt-legend-item">
+          <div class="gantt-legend-dot" style="background:#DC2626;opacity:.7"></div>Сегодня
+        </div>
+      </div>`;
+
+    el.innerHTML = `<div class="gantt-wrap">${axisHtml}${rowsHtml}</div>${legendHtml}`;
+}
+
+// ════ ПОЛНОТА ДОКУМЕНТОВ ════════════════════════════════════════════════
+const DOC_REQUIREMENTS = [
+  {
+    folder: '1. Инициация',
+    required: [
+      'Запрос на инициацию проекта',
+      'Бизнес-инициатива',
+      'Бизнес-кейс Lite',
+      'Паспорт проекта (L1)',
+    ]
+  },
+  {
+    folder: '2. Планирование',
+    required: [
+      'Устав проекта',
+      'План управления проектом',
+      'План коммуникаций',
+      'Матрица RACI',
+      'Реестр рисков',
+    ]
+  },
+  {
+    folder: '3. Исполнение и Контроль',
+    required: [
+      'Отчёт о статусе проекта',
+      'Протокол совещания',
+      'Акт приёмки этапа',
+    ]
+  },
+  {
+    folder: '4. Завершение',
+    required: [
+      'Итоговый отчёт по проекту',
+      'Извлечённые уроки',
+      'Финальный акт приёмки',
+    ]
+  },
+  {
+    folder: 'Запрос на изменение',
+    required: [
+      'Формальный запрос на изменение',
+      'Протокол ПК с решением',
+    ]
+  },
+];
+
+function renderCompleteness(p) {
+    const el = document.getElementById('completenessList');
+    const existingFolders = (p.folders || []).map(f => (f.name || '').toLowerCase());
+    const getFiles = (folderName) => {
+        const f = (p.folders || []).find(f => f.name === folderName);
+        return f ? (f.files || []).map(fi => fi.name.toLowerCase()) : [];
+    };
+
+    // Проверяем наличие папок
+    let totalRequired = 0, totalPresent = 0;
+    const sectionsHtml = DOC_REQUIREMENTS.map(req => {
+        const folderExists = existingFolders.some(fn =>
+            fn.includes(req.folder.toLowerCase()) || req.folder.toLowerCase().includes(fn.split('.')[fn.split('.').length-1]?.trim() || ''));
+        const files = getFiles(req.folder);
+        const itemsHtml = req.required.map(docName => {
+            // Проверяем частичное совпадение по ключевым словам
+            const keyword = docName.split(' ').filter(w => w.length > 3)[0]?.toLowerCase() || docName.toLowerCase();
+            const found = files.some(fn => fn.includes(keyword));
+            totalRequired++;
+            if (found) totalPresent++;
+            return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #F3F4F6">
+              <span style="font-size:14px;flex-shrink:0">${found ? '✅' : '❌'}</span>
+              <span style="font-size:12px;color:${found ? '#374151' : '#DC2626'}">${docName}</span>
+            </div>`;
+        }).join('');
+        const cnt = files.length;
+        const folderColor = cnt > 0 ? '#FFFBEB' : '#FFF5F5';
+        const folderBorder = cnt > 0 ? '#FDE68A' : '#FECACA';
+        return `<div style="margin-bottom:10px;border:1px solid ${folderBorder};border-radius:10px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:${folderColor}">
+            <span style="font-size:15px">${folderExists || cnt > 0 ? '📁' : '📂'}</span>
+            <span style="font-size:13px;font-weight:600;color:#374151;flex:1">${req.folder}</span>
+            <span style="font-size:11px;padding:1px 8px;border-radius:10px;font-weight:600;
+              background:${cnt > 0 ? '#DBEAFE' : '#FEE2E2'};color:${cnt > 0 ? '#1D4ED8' : '#DC2626'}">${cnt} файл</span>
+          </div>
+          <div style="padding:4px 12px 8px">${itemsHtml}</div>
+        </div>`;
+    }).join('');
+
+    const pct = totalRequired > 0 ? Math.round(totalPresent / totalRequired * 100) : 0;
+    const barColor = pct >= 80 ? '#059669' : pct >= 50 ? '#D97706' : '#DC2626';
+    const summaryHtml = `<div style="margin-bottom:12px;padding:10px 14px;background:#F9FAFB;
+      border:1px solid #E5E7EB;border-radius:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;font-weight:600;color:#374151">Полнота документации</span>
+        <span style="font-size:13px;font-weight:700;color:${barColor}">${pct}%</span>
+      </div>
+      <div style="height:6px;background:#E5E7EB;border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .4s"></div>
+      </div>
+      <div style="font-size:11px;color:#9CA3AF;margin-top:4px">${totalPresent} из ${totalRequired} обязательных документов найдено</div>
+    </div>`;
+
+    el.innerHTML = summaryHtml + sectionsHtml;
+}
+
+// ════ ПОРТФЕЛЬ — НАВИГАЦИЯ ════════════════════════════════════════════════════
+function showPortfolio() {
+    resourceShowMain();
+    portfolioViewActive = true;
+    pkViewActive = false;
+    crViewActive = false;
+    document.getElementById('mainView').style.display = 'none';
+    document.getElementById('sidebarNav').style.display = 'none';
+    document.getElementById('portfolioView').classList.add('active');
+    document.getElementById('pkView').classList.remove('active');
+    document.getElementById('crView').classList.remove('active');
+    document.getElementById('btnPortfolio').classList.add('active');
+    document.getElementById('btnPK').classList.remove('active');
+    document.getElementById('btnCR').classList.remove('active');
+    renderPortfolioGantt();
+}
+
+function showPK() {
+    resourceShowMain();
+    pkViewActive = true;
+    portfolioViewActive = false;
+    crViewActive = false;
+    document.getElementById('mainView').style.display = 'none';
+    document.getElementById('sidebarNav').style.display = 'none';
+    document.getElementById('pkView').classList.add('active');
+    document.getElementById('portfolioView').classList.remove('active');
+    document.getElementById('crView').classList.remove('active');
+    document.getElementById('btnPK').classList.add('active');
+    document.getElementById('btnPortfolio').classList.remove('active');
+    document.getElementById('btnCR').classList.remove('active');
+    updatePKCounters();
+    updatePKCharts();
+    renderPKTable();
+}
+
+function showCR() {
+    resourceShowMain();
+    crViewActive = true;
+    pkViewActive = false;
+    portfolioViewActive = false;
+    document.getElementById('mainView').style.display = 'none';
+    document.getElementById('sidebarNav').style.display = 'none';
+    document.getElementById('crView').classList.add('active');
+    document.getElementById('pkView').classList.remove('active');
+    document.getElementById('portfolioView').classList.remove('active');
+    document.getElementById('btnCR').classList.add('active');
+    document.getElementById('btnPK').classList.remove('active');
+    document.getElementById('btnPortfolio').classList.remove('active');
+    buildCRProjectFilter();
+    renderCRTable();
+}
+
+function showMain() {
+    resourceShowMain();
+    portfolioViewActive = false;
+    pkViewActive = false;
+    crViewActive = false;
+    document.getElementById('mainView').style.display = '';
+    document.getElementById('sidebarNav').style.display = '';
+    document.getElementById('portfolioView').classList.remove('active');
+    document.getElementById('pkView').classList.remove('active');
+    document.getElementById('crView').classList.remove('active');
+    document.getElementById('btnPortfolio').classList.remove('active');
+    document.getElementById('btnPK').classList.remove('active');
+    document.getElementById('btnCR').classList.remove('active');
+}
+
+// Кнопка Портфель: переключение
+document.getElementById('btnPortfolio').addEventListener('click', () => {
+    if (portfolioViewActive) showMain();
+    else showPortfolio();
+});
+
+// Кнопка ПК: переключение
+document.getElementById('btnPK').addEventListener('click', () => {
+    if (pkViewActive) showMain();
+    else showPK();
+});
+
+// Кнопка Запросы на изменение: переключение
+document.getElementById('btnCR').addEventListener('click', () => {
+    if (crViewActive) showMain();
+    else showCR();
+});
+
+// ════ ПОРТФЕЛЬ — ФИЛЬТРЫ ══════════════════════════════════════════════════════
+function buildToolbarSelects() {
+    function fill(id, values) {
+        const sel = document.getElementById(id);
+        const sorted = [...new Set(values.filter(v => v && v !== '-'))].sort((a,b) => a.localeCompare(b,'ru'));
+        sorted.forEach(v => { const o = document.createElement('option'); o.value = o.textContent = v; sel.appendChild(o); });
+    }
+    fill('tbDept',     allProjects.map(p => p.department));
+    fill('tbPriority', allProjects.map(p => p.priority));
+    fill('tbPM',       allProjects.map(p => p.projectManager));
+    fill('tbCustomer', allProjects.map(p => p.customer));
+    fill('tbCurator',  allProjects.map(p => p.curator));
+}
+
+function applyToolbarFilters() {
+    tbFilters.dept     = document.getElementById('tbDept').value;
+    tbFilters.priority = document.getElementById('tbPriority').value;
+    tbFilters.pm       = document.getElementById('tbPM').value;
+    tbFilters.customer = document.getElementById('tbCustomer').value;
+    tbFilters.curator  = document.getElementById('tbCurator').value;
+    renderTable();
+}
+
+function buildPortfolioSelects() {
+    function fillSelect(id, values) {
+        const sel = document.getElementById(id);
+        const current = sel.value;
+        sel.innerHTML = '<option value="">Все</option>';
+        const sorted = [...values].sort((a, b) => a.localeCompare(b, 'ru'));
+        for (const v of sorted) {
+            if (v && v !== '-') {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                sel.appendChild(opt);
+            }
+        }
+        if (current) sel.value = current;
+    }
+
+    fillSelect('pfStatus',   [...new Set(allProjects.map(p => p.status).filter(Boolean))]);
+    fillSelect('pfDept',     [...new Set(allProjects.map(p => p.department).filter(Boolean))]);
+    fillSelect('pfPriority', [...new Set(allProjects.map(p => p.priority).filter(Boolean))]);
+    fillSelect('pfCustomer', [...new Set(allProjects.map(p => p.customer).filter(Boolean))]);
+    fillSelect('pfPM',       [...new Set(allProjects.map(p => p.projectManager).filter(Boolean))]);
+    fillSelect('pfCurator',  [...new Set(allProjects.map(p => p.curator).filter(v => v && v !== '-'))]);
+}
+
+function resetPortfolioFilters() {
+    document.getElementById('pfStatus').value   = '';
+    document.getElementById('pfDept').value     = '';
+    document.getElementById('pfPriority').value = '';
+    document.getElementById('pfCustomer').value = '';
+    document.getElementById('pfPM').value       = '';
+    document.getElementById('pfCurator').value  = '';
+    document.getElementById('pfOnlyActive').checked = false;
+    renderPortfolioGantt();
+}
+
+function setScale(scale) {
+    portfolioScale = scale;
+    document.getElementById('scaleQ').classList.toggle('active', scale === 'quarter');
+    document.getElementById('scaleH').classList.toggle('active', scale === 'half');
+    document.getElementById('scaleY').classList.toggle('active', scale === 'year');
+    document.getElementById('scaleAll').classList.toggle('active', scale === 'all');
+    renderPortfolioGantt();
+}
+
+// ════ ПОРТФЕЛЬ — РЕНДЕР ГАНТА ═════════════════════════════════════════════════
+function renderPortfolioGantt() {
+    const statusFilter   = document.getElementById('pfStatus').value;
+    const deptFilter     = document.getElementById('pfDept').value;
+    const priorityFilter = document.getElementById('pfPriority').value;
+    const customerFilter = document.getElementById('pfCustomer').value;
+    const pmFilter       = document.getElementById('pfPM').value;
+    const curatorFilter  = document.getElementById('pfCurator').value;
+    const onlyActive     = document.getElementById('pfOnlyActive').checked;
+
+    const INACTIVE = ['Завершён', 'Отменён'];
+
+    let list = allProjects.filter(p => {
+        if (statusFilter   && p.status         !== statusFilter)   return false;
+        if (deptFilter     && p.department      !== deptFilter)     return false;
+        if (priorityFilter && p.priority        !== priorityFilter) return false;
+        if (customerFilter && p.customer        !== customerFilter) return false;
+        if (pmFilter       && p.projectManager  !== pmFilter)       return false;
+        if (curatorFilter  && p.curator         !== curatorFilter)  return false;
+        if (onlyActive     && INACTIVE.includes(p.status))         return false;
+        const hasDate = (p.planStart && p.planStart !== '-') || (p.factStart && p.factStart !== '-');
+        return hasDate;
+    });
+
+    list = list.slice().sort((a, b) => {
+        const da = parseRuDate(a.planStart) || new Date('9999');
+        const db = parseRuDate(b.planStart) || new Date('9999');
+        return da - db;
+    });
+
+    document.getElementById('pfCount').textContent = list.length > 0
+        ? `Показано: ${list.length} проектов` : '';
+
+    const container = document.getElementById('portfolioGantt');
+
+    if (list.length === 0) {
+        container.innerHTML = '<div class="pg-empty">Нет проектов для отображения.<br>Попробуйте изменить фильтры.</div>';
+        return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let axisStart, axisEnd;
+
+    if (portfolioScale === 'quarter') {
+        const qMonth = Math.floor(today.getMonth() / 3) * 3;
+        axisStart = new Date(today.getFullYear(), qMonth, 1);
+        axisEnd   = new Date(today.getFullYear(), qMonth + 3, 0);
+    } else if (portfolioScale === 'half') {
+        const hMonth = Math.floor(today.getMonth() / 6) * 6;
+        axisStart = new Date(today.getFullYear(), hMonth, 1);
+        axisEnd   = new Date(today.getFullYear(), hMonth + 6, 0);
+    } else if (portfolioScale === 'all') {
+        // Диапазон по данным: от самой ранней до самой поздней даты в списке
+        const allDates = [];
+        for (const p of list) {
+            const _ps = parseRuDate(p.planStart); if (_ps) allDates.push(_ps);
+            const _pe = parseRuDate(p.planEnd);   if (_pe) allDates.push(_pe);
+            const _fs = parseRuDate(p.factStart); if (_fs) allDates.push(_fs);
+            const _fe = parseRuDate(p.factEnd);   if (_fe) allDates.push(_fe);
+        }
+        const minTs = Math.min(...allDates.map(d => d.getTime()));
+        const maxTs = Math.max(...allDates.map(d => d.getTime()));
+        axisStart = new Date(minTs);
+        axisStart.setDate(1); // начало месяца
+        axisEnd = new Date(maxTs);
+        axisEnd.setMonth(axisEnd.getMonth() + 1, 0); // конец месяца
+    } else {
+        axisStart = new Date(today.getFullYear(), 0, 1);
+        axisEnd   = new Date(today.getFullYear(), 11, 31);
+    }
+
+    const totalMs = axisEnd - axisStart || 1;
+
+    // Шаг меток оси: для 'all' подбираем автоматически по ширине диапазона
+    const rangeMonths = Math.round(totalMs / (1000 * 60 * 60 * 24 * 30));
+    const stepMonths = portfolioScale === 'quarter' ? 1
+        : portfolioScale === 'half' ? 1
+        : portfolioScale === 'all' ? (rangeMonths <= 12 ? 1 : rangeMonths <= 36 ? 3 : rangeMonths <= 72 ? 6 : 12)
+        : 2;
+    const axisLabels = [];
+    const cur = new Date(axisStart);
+    cur.setDate(1);
+    while (cur <= axisEnd) {
+        const pct = (cur - axisStart) / totalMs * 100;
+        if (pct >= 0 && pct <= 100) {
+            axisLabels.push({
+                pct,
+                label: cur.toLocaleDateString('ru-RU', { month: 'short', year: (portfolioScale === 'year' || portfolioScale === 'all') ? '2-digit' : 'numeric' })
+            });
+        }
+        cur.setMonth(cur.getMonth() + stepMonths);
+    }
+
+    const todayPct = Math.max(0, Math.min(100, (today - axisStart) / totalMs * 100));
+
+    const STATUS_TO_BAR = {
+        'Выполнение и контроль': 'pg-active',
+        'Планирование':          'pg-plan',
+        'Инициация':             'pg-init',
+        'На паузе (On-Hold)':    'pg-pause',
+        'Завершение':            'pg-finish',
+        'Завершён':              'pg-done',
+        'Отменён':               'pg-cancel',
+        'Утвержден (В бэклоге)': 'pg-backlog',
+        'Отложен':               'pg-delay',
+    };
+
+    const axisTicksHtml = axisLabels.map(l =>
+        `<div class="pg-axis-tick" style="left:${l.pct}%"></div>
+         <div class="pg-axis-label" style="left:${l.pct}%">${l.label}</div>`
+    ).join('');
+
+    const headerHtml = `
+      <div class="pg-header">
+        <div class="pg-header-spacer"></div>
+        <div class="pg-axis-wrap" id="pgAxisWrap">
+          ${axisTicksHtml}
+          <div class="pg-today-line" style="left:${todayPct}%" title="Сегодня"></div>
+        </div>
+      </div>`;
+
+    const rowsHtml = list.map(p => {
+        const planS = parseRuDate(p.planStart);
+        const planE = parseRuDate(p.planEnd);
+
+        const isDone = INACTIVE.includes(p.status);
+        const isOverdue = !isDone && planE && planE < today;
+
+        let barHtml = '';
+        if (planS && planE) {
+            const left  = (planS - axisStart) / totalMs * 100;
+            const right = (planE - axisStart) / totalMs * 100;
+            const clampL = Math.max(0, left);
+            const clampR = Math.min(100, right);
+            if (clampR > clampL) {
+                const barCls = isOverdue ? 'pg-overdue' : (STATUS_TO_BAR[p.status] || 'pg-plan');
+                const tooltip = `${p.name}\n${fmtDate(p.planStart)} — ${fmtDate(p.planEnd)}\n${p.status}${isOverdue ? '\n⚠ Просрочен' : ''}`;
+                barHtml = `<div class="pg-bar ${barCls}"
+                    style="left:${clampL}%;width:${clampR - clampL}%"
+                    title="${esc(tooltip)}"></div>`;
+            }
+        }
+
+        const nameStyle = isOverdue ? 'color:#DC2626;font-weight:600' : '';
+
+        return `
+          <div class="pg-row" onclick="loadDetail(${p.projectId})" title="Открыть карточку проекта">
+            <div class="pg-label-cell">
+              <span class="pg-label-id">${p.projectId}</span>
+              <span class="pg-label-name" style="${nameStyle}">${esc(p.name)}</span>
+            </div>
+            <div class="pg-track-cell">
+              <div class="pg-track"></div>
+              ${barHtml}
+              <div class="pg-today-line" style="left:${todayPct}%"></div>
+              ${axisLabels.map(l => `<div class="pg-grid-line" style="left:${l.pct}%"></div>`).join('')}
+            </div>
+          </div>`;
+    }).join('');
+
+    container.innerHTML = headerHtml + rowsHtml;
+}
+
+// ════ ПК — КОММЕНТАРИИ ════════════════════════════════════════════════════════
+async function loadPKComments() {
+    try {
+        const res = await fetch(BASE+'/api/projects/pk-comments');
+        if (res.ok) {
+            pkComments = await res.json();
+        }
+    } catch (e) {
+        console.warn('Не удалось загрузить комментарии ПК:', e);
+        pkComments = {};
+    }
+}
+
+async function savePKComment(projectId, text) {
+    try {
+        const res = await fetch(BASE+'/api/projects/pk-comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectId, comment: text })
+        });
+        if (res.ok) {
+            pkComments[projectId] = text;
+            return true;
+        }
+    } catch (e) {
+        console.error('Ошибка сохранения комментария:', e);
+    }
+    return false;
+}
+
+// ════ ПК — ВЫЧИСЛЕНИЕ RAG-СТАТУСА ════════════════════════════════════════════
+// ════ ПК — ДИАГРАММЫ ════════════════════════════════════════════════
+function drawDonut(canvasId, legendId, data) {
+    // data = [{label, value, color}]
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const total = data.reduce((s, d) => s + d.value, 0);
+    if (total === 0) return;
+
+    const cx = W / 2, cy = H / 2;
+    const outerR = Math.min(W, H) / 2 - 4;
+    const innerR = outerR * 0.52;
+    let startAngle = -Math.PI / 2;
+
+    data.forEach(d => {
+        const slice = (d.value / total) * 2 * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, outerR, startAngle, startAngle + slice);
+        ctx.closePath();
+        ctx.fillStyle = d.color;
+        ctx.fill();
+        // Число в середине сегмента
+        const midAngle = startAngle + slice / 2;
+        const labelR = (outerR + innerR) / 2;
+        const lx = cx + Math.cos(midAngle) * labelR;
+        const ly = cy + Math.sin(midAngle) * labelR;
+        if (slice > 0.25) {
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(d.value, lx, ly);
+        }
+        startAngle += slice;
+    });
+
+    // Дырка
+    ctx.beginPath();
+    ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
+    ctx.fillStyle = '#F9FAFB';
+    ctx.fill();
+
+    // Центр
+    ctx.fillStyle = '#374151';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(total, cx, cy);
+
+    // Легенда
+    const legendEl = document.getElementById(legendId);
+    if (legendEl) {
+        legendEl.innerHTML = data.map(d =>
+            `<div class="pk-legend-item">
+               <div class="pk-legend-dot" style="background:${d.color}"></div>
+               <span class="pk-legend-label">${d.label}</span>
+               <span class="pk-legend-cnt">${d.value}</span>
+             </div>`
+        ).join('');
+    }
+}
+
+function updatePKCharts() {
+    const active = allProjects.filter(p => !['Завершён','Отменён'].includes(p.status));
+
+    // 1. Здоровье портфеля — через getPKStatus чтобы совпадало со счётчиками
+    let red = 0, yellow = 0, green = 0;
+    active.forEach(p => {
+        const rag = getPKStatus(p);
+        if (rag === 'red')    red++;
+        else if (rag === 'yellow') yellow++;
+        else green++;
+    });
+    const healthData = [
+        { label: 'Жёлтые',  value: yellow, color: '#F59E0B' },
+        { label: 'Зелёные', value: green,  color: '#10B981' },
+        { label: 'Красные',  value: red,    color: '#EF4444' },
+    ].filter(d => d.value > 0);
+    drawDonut('chartHealth', 'legendHealth', healthData);
+
+    // 2. Статус проекта
+    const statusMap = {};
+    active.forEach(p => { statusMap[p.status] = (statusMap[p.status] || 0) + 1; });
+    const statusColors = {
+        'Выполнение и контроль': '#10B981',
+        'Планирование': '#3B82F6',
+        'Инициация': '#8B5CF6',
+        'На паузе (On-Hold)': '#F59E0B',
+        'Завершение': '#0891B2',
+        'Утвержден (В бэклоге)': '#D97706',
+    };
+    const statusData = Object.entries(statusMap)
+        .sort((a,b) => b[1]-a[1])
+        .map(([label, value]) => ({ label, value, color: statusColors[label] || '#9CA3AF' }));
+    drawDonut('chartStatus', 'legendStatus', statusData);
+}
+
+function pkSort(field) {
+    if (pkSortField === field) {
+        pkSortDir = pkSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+        pkSortField = field;
+        pkSortDir = 'asc';
+    }
+    // Обновляем индикаторы в заголовках
+    ['name','score'].forEach(f => {
+        const el = document.getElementById(`pkSort${f.charAt(0).toUpperCase()+f.slice(1)}`);
+        if (el) el.textContent = pkSortField === f ? (pkSortDir === 'asc' ? '↑' : '↓') : '↕';
+    });
+    renderPKTable();
+}
+
+// Нормализация healthStatus → 'red' | 'yellow' | 'green' | null
+function normalizeHealth(healthStatus) {
+    const h = (healthStatus || '').trim().toLowerCase()
+        .replace(/ё/g, 'е').replace(/й/g, 'и');
+    if (h.includes('красн')) return 'red';
+    if (h.includes('желт') || h.includes('жолт')) return 'yellow';
+    if (h.includes('зелен') || h.includes('зел')) return 'green';
+    return null;
+}
+
+function getPKStatus(p) {
+    const INACTIVE = ['Завершён', 'Отменён'];
+    if (INACTIVE.includes(p.status)) return null;
+
+    // RAG из поля CSV
+    const fromHealth = normalizeHealth(p.healthStatus);
+    if (fromHealth) return fromHealth;
+
+    // Фоллбэк по дате если поле пустое
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dateStr = (p.deadlineDate && p.deadlineDate !== '-') ? p.deadlineDate : p.planEnd;
+    if (!dateStr || dateStr === '-') return 'green';
+    const d = parseRuDate(dateStr);
+    if (!d) return 'green';
+    const diff = Math.ceil((d - today) / 86400000);
+    if (diff < 0) return 'red';
+    if (diff <= 30) return 'yellow';
+    return 'green';
+}
+
+// ════ ПК — СЧЁТЧИКИ ══════════════════════════════════════════════════════════
+
+// ── Переключение вкладок дашбордов ПК (карусель) ───────────────────────
+function pkChartSwitch(tab) {
+    document.querySelectorAll('.pk-chart-tab').forEach(btn => {
+        const active = btn.dataset.pkchart === tab;
+        btn.style.borderBottomColor = active ? '#2563EB' : 'transparent';
+        btn.style.color = active ? '#2563EB' : '#6B7280';
+    });
+    document.querySelectorAll('.pk-chart-pane').forEach(pane => {
+        pane.style.display = pane.dataset.pane === tab ? '' : 'none';
+    });
+
+    // Ленивая отрисовка
+    if (tab === 'type') pkRenderProjectTypeChart();
+    if (tab === 'dept') pkRenderDeptChart();
+    if (tab === 'scoring') pkRenderScoringChart();
+}
+
+function pkRenderProjectTypeChart() {
+    const active = allProjects.filter(p => !['Завершён','Отменён'].includes(p.status));
+    const typeMap = {};
+    active.forEach(p => {
+        const t = p.projectType || 'Не указан';
+        typeMap[t] = (typeMap[t] || 0) + 1;
+    });
+    const data = Object.entries(typeMap)
+        .sort((a,b) => b[1]-a[1])
+        .map(([label, value]) => ({ label, value, color: ['#2563EB','#8B5CF6','#10B981','#F59E0B','#EF4444','#06B6D4','#EC4899'][Object.keys(typeMap).indexOf(label) % 7] || '#9CA3AF' }));
+    drawDonut('chartProjectType', 'legendProjectType', data);
+}
+
+function pkRenderDeptChart() {
+    const active = allProjects.filter(p => !['Завершён','Отменён'].includes(p.status));
+    const depts = {};
+    active.forEach(p => {
+        const d = p.department || 'Не указан';
+        if (!depts[d]) depts[d] = { total: 0, onPlan: 0, risks: 0, intervention: 0 };
+        depts[d].total++;
+        const rag = getPKStatus(p);
+        if (rag === 'green') depts[d].onPlan++;
+        else if (rag === 'yellow') depts[d].risks++;
+        else if (rag === 'red') depts[d].intervention++;
+    });
+
+    const canvas = document.getElementById('chartByDept');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const entries = Object.entries(depts).sort((a,b) => b[1].total - a[1].total).slice(0, 10);
+    if (!entries.length) return;
+
+    const barH = 28, gap = 8, maxW = 300, startX = 160;
+    entries.forEach(([dept, counts], i) => {
+        const y = i * (barH + gap) + 10;
+        ctx.fillStyle = '#374151';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(dept.length > 20 ? dept.slice(0,18) + '..' : dept, startX - 8, y + barH/2 + 3);
+
+        const totalW = (counts.total / entries[0][1].total) * maxW;
+        ctx.fillStyle = '#10B981';
+        ctx.fillRect(startX, y, totalW * (counts.onPlan/counts.total), barH);
+        ctx.fillStyle = '#F59E0B';
+        ctx.fillRect(startX + totalW * (counts.onPlan/counts.total), y, totalW * (counts.risks/counts.total), barH);
+        ctx.fillStyle = '#EF4444';
+        ctx.fillRect(startX + totalW * ((counts.onPlan+counts.risks)/counts.total), y, totalW * (counts.intervention/counts.total), barH);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(counts.total, startX + totalW + 6, y + barH/2 + 3);
+    });
+}
+
+function pkRenderScoringChart() {
+    const canvas = document.getElementById('chartScoring');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const pad = 50;
+    const plotW = W - pad * 2, plotH = H - pad * 2;
+
+    // Оси
+    ctx.strokeStyle = '#E5E7EB';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad, pad);
+    ctx.lineTo(pad, H - pad);
+    ctx.lineTo(W - pad, H - pad);
+    ctx.stroke();
+
+    // Сетка
+    ctx.strokeStyle = '#F3F4F6';
+    for (let i = 1; i <= 4; i++) {
+        const x = pad + (plotW / 4) * i;
+        const y = H - pad - (plotH / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(pad, y); ctx.lineTo(W - pad, y);
+        ctx.moveTo(x, pad)  ; ctx.lineTo(x, H - pad);
+        ctx.stroke();
+    }
+
+    // Метки осей
+    ctx.fillStyle = '#6B7280';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Стратегическое соответствение →', W/2, H - 10);
+    ctx.save();
+    ctx.translate(14, H/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.fillText('← Сложность и Риски', 0, 0);
+    ctx.restore();
+
+    // Точки
+    const active = allProjects.filter(p => !['Завершён','Отменён'].includes(p.status));
+    const parseScore = s => {
+        const v = parseFloat(String(s || '').replace(',', '.'));
+        return isNaN(v) ? null : v;
+    };
+
+    active.forEach(p => {
+        const x = parseScore(p.strategicAlignment);
+        const y = parseScore(p.complexityRisk);
+        if (x === null || y === null) return;
+
+        const px = pad + (x / 5) * plotW;
+        const py = H - pad - (y / 5) * plotH;
+
+        const rag = getPKStatus(p);
+        ctx.fillStyle = rag === 'red' ? '#EF4444' : rag === 'yellow' ? '#F59E0B' : '#10B981';
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, 2*Math.PI);
+        ctx.fill();
+
+        // Подпись для красных
+        if (rag === 'red') {
+            ctx.fillStyle = '#374151';
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('#' + p.projectId, px + 8, py - 4);
+        }
+    });
+}
+
+
+function updatePKCounters() {
+    const INACTIVE = ['Завершён', 'Отменён'];
+    const active   = allProjects.filter(p => !INACTIVE.includes(p.status));
+    const inWork   = active.filter(p => p.status === 'Выполнение и контроль');
+    const reds     = active.filter(p => getPKStatus(p) === 'red');
+    const yellows  = active.filter(p => getPKStatus(p) === 'yellow');
+    const paused   = active.filter(p => p.status === 'На паузе (On-Hold)');
+    const deadlines= active.filter(p => (p.hardDeadline||'').trim().toLowerCase() === 'да');
+    document.getElementById('cntAll').textContent      = active.length;
+    document.getElementById('cntWork').textContent     = inWork.length;
+    document.getElementById('cntRed').textContent      = reds.length;
+    document.getElementById('cntYellow').textContent   = yellows.length;
+    document.getElementById('cntPause').textContent    = paused.length;
+    document.getElementById('cntDeadline').textContent = deadlines.length;
+}
+
+// ════ ПК — РЕНДЕР ТАБЛИЦЫ ════════════════════════════════════════════════════
+function buildPKCustomerFilter() {
+    const sel = document.getElementById('pkFilterCustomer');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Все</option>';
+    const pkList = allProjects.filter(p => getPKStatus(p) !== null);
+    const customers = [...new Set(pkList.map(p => p.customer).filter(v => v && v !== '-'))].sort((a,b) => a.localeCompare(b,'ru'));
+    for (const c of customers) {
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c;
+        sel.appendChild(opt);
+    }
+    if (current) sel.value = current;
+}
+
+function renderPKTable() {
+    // Построить фильтр заказчиков при первом рендере
+    buildPKCustomerFilter();
+
+    const statusFilter   = document.getElementById('pkFilterStatus').value;
+    const customerFilter = document.getElementById('pkFilterCustomer').value;
+    const searchVal      = (document.getElementById('pkSearch')?.value || '').trim().toLowerCase();
+
+    const INACTIVE = ['Завершён', 'Отменён'];
+
+    // Фильтруем: только активные (не Завершён/Отменён)
+    let list = allProjects.filter(p => {
+        const rag = getPKStatus(p);
+        if (rag === null) return false;
+        if (statusFilter && rag !== statusFilter) return false;
+        if (customerFilter && p.customer !== customerFilter) return false;
+        if (searchVal) {
+            const inId   = String(p.projectId).includes(searchVal);
+            const inName = (p.name || '').toLowerCase().includes(searchVal);
+            if (!inId && !inName) return false;
+        }
+        return true;
+    });
+
+    // Сортировка
+    const RAG_ORDER = { red: 0, yellow: 1, green: 2 };
+    list = list.slice().sort((a, b) => {
+        if (pkSortField === 'name') {
+            const cmp = (a.name || '').localeCompare(b.name || '', 'ru');
+            return pkSortDir === 'asc' ? cmp : -cmp;
+        }
+        if (pkSortField === 'score') {
+            const sa = parseFloat((a.totalScore || '').replace(',','.')) || 0;
+            const sb = parseFloat((b.totalScore || '').replace(',','.')) || 0;
+            // desc = высокий вверху
+            return pkSortDir === 'desc' ? sb - sa : sa - sb;
+        }
+        // по умолчанию: по RAG
+        const ra = RAG_ORDER[getPKStatus(a)] ?? 3;
+        const rb = RAG_ORDER[getPKStatus(b)] ?? 3;
+        return ra - rb;
+    });
+
+    document.getElementById('pkCount').textContent = `Показано: ${list.length} проектов`;
+
+    const tbody = document.getElementById('pkTbody');
+
+    if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:#9CA3AF">Проектов не найдено</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = list.map(p => {
+        const rag = getPKStatus(p);
+        const rowCls = rag === 'red' ? 'pk-row-red' : rag === 'yellow' ? 'pk-row-yellow' : '';
+
+        // RAG-кружок
+        const ragDotCls = rag === 'red' ? 'rag-red' : rag === 'yellow' ? 'rag-yellow' : 'rag-green';
+        const ragCell = `<div class="rag-cell"><span class="rag-dot ${ragDotCls}"></span></div>`;
+
+        // Тип обязательств
+        const obligType = (p.hardDeadline && p.hardDeadline !== '-' && p.hardDeadline.toLowerCase() !== 'нет')
+            ? 'Твёрдое' : 'Прогнозный';
+
+        // Срок завершения
+        const deadlineDateStr = (p.deadlineDate && p.deadlineDate !== '-') ? p.deadlineDate : p.planEnd;
+        const deadlineFormatted = fmtDate(deadlineDateStr);
+
+        // Скоринг
+        const scoreVal = parseFloat(p.totalScore);
+        const scoreHtml = !isNaN(scoreVal)
+            ? `<span class="score-badge ${scoreVal >= 3 ? 'score-high' : scoreVal >= 2 ? 'score-mid' : 'score-low'}">${p.totalScore}</span>`
+            : '<span style="color:#9CA3AF">—</span>';
+
+        // Комментарий
+        const commentText = pkComments[p.projectId] || '';
+        const commentHtml = buildCommentHtml(p.projectId, commentText);
+
+        return `<tr class="${rowCls}" data-pid="${p.projectId}">
+          <td style="cursor:pointer" onclick="loadDetail(${p.projectId})">
+            <div class="p-name" style="font-size:12px">${esc(p.name)}</div>
+            <div class="p-dept">№ ${p.projectId}</div>
+          </td>
+          <td>
+            <div style="font-size:12px">${esc(p.customer || '—')}</div>
+            ${p.projectManager ? `<div class="p-dept">${esc(p.projectManager)}</div>` : ''}
+          </td>
+          <td>${ragCell}</td>
+          <td style="font-size:12px">${obligType}</td>
+          <td style="font-size:12px;white-space:nowrap">${deadlineFormatted}</td>
+          <td>${scoreHtml}</td>
+          <td style="font-size:12px;color:#9CA3AF;text-align:center">—</td>
+          <td class="pk-comment-cell">${commentHtml}</td>
+        </tr>`;
+    }).join('');
+}
+
+// ════ ПК — INLINE РЕДАКТИРОВАНИЕ КОММЕНТАРИЯ ══════════════════════════════════
+function buildCommentHtml(projectId, text) {
+    const displayText = text ? esc(text) : 'Добавить комментарий...';
+    const emptyCls = text ? '' : 'empty';
+    return `
+      <div class="pk-comment-view-${projectId}">
+        <span class="pk-comment-text ${emptyCls}" onclick="startEditComment(${projectId})">${displayText}</span>
+      </div>
+      <div class="pk-comment-edit" id="pk-comment-edit-${projectId}">
+        <textarea id="pk-comment-ta-${projectId}" rows="3">${esc(text)}</textarea>
+        <div class="pk-comment-actions">
+          <button class="pk-comment-save" onclick="commitComment(${projectId})">Сохранить</button>
+          <button class="pk-comment-cancel" onclick="cancelEditComment(${projectId})">Отмена</button>
+        </div>
+      </div>`;
+}
+
+function startEditComment(projectId) {
+    // Скрыть отображение, показать редактирование
+    const viewEl = document.querySelector(`.pk-comment-view-${projectId}`);
+    const editEl = document.getElementById(`pk-comment-edit-${projectId}`);
+    if (viewEl) viewEl.style.display = 'none';
+    if (editEl) editEl.classList.add('active');
+    const ta = document.getElementById(`pk-comment-ta-${projectId}`);
+    if (ta) { ta.focus(); ta.selectionStart = ta.selectionEnd = ta.value.length; }
+}
+
+function cancelEditComment(projectId) {
+    const viewEl = document.querySelector(`.pk-comment-view-${projectId}`);
+    const editEl = document.getElementById(`pk-comment-edit-${projectId}`);
+    if (viewEl) viewEl.style.display = '';
+    if (editEl) editEl.classList.remove('active');
+    // Вернуть текст textarea к сохранённому
+    const ta = document.getElementById(`pk-comment-ta-${projectId}`);
+    if (ta) ta.value = pkComments[projectId] || '';
+}
+
+async function commitComment(projectId) {
+    const ta = document.getElementById(`pk-comment-ta-${projectId}`);
+    if (!ta) return;
+    const newText = ta.value.trim();
+    const ok = await savePKComment(projectId, newText);
+    if (ok) {
+        // Обновить отображение в ячейке
+        const viewEl = document.querySelector(`.pk-comment-view-${projectId}`);
+        const editEl = document.getElementById(`pk-comment-edit-${projectId}`);
+        if (viewEl) {
+            const span = viewEl.querySelector('.pk-comment-text');
+            if (span) {
+                if (newText) {
+                    span.textContent = newText;
+                    span.classList.remove('empty');
+                } else {
+                    span.textContent = 'Добавить комментарий...';
+                    span.classList.add('empty');
+                }
+            }
+            viewEl.style.display = '';
+        }
+        if (editEl) editEl.classList.remove('active');
+    } else {
+        alert('Не удалось сохранить комментарий. Проверьте соединение.');
+    }
+}
+
+// ════ ОТКРЫТИЕ ФАЙЛА ═════════════════════════════════════════════════════════
+function openFile(path) {
+    const ext = path.split('.').pop().toLowerCase();
+    const previewable = ['pdf','png','jpg','jpeg','gif','bmp','svg','txt','csv','mp4','webm'];
+
+    if (previewable.includes(ext)) {
+        // Превью в модальном окне без скачивания копии
+        const modal = document.getElementById('filePreviewModal');
+        const iframe = document.getElementById('filePreviewIframe');
+        const nameEl = document.getElementById('filePreviewName');
+        const dlLink = document.getElementById('filePreviewDownload');
+
+        nameEl.textContent = path.split(/[\\/]/).pop();
+        dlLink.href = BASE + '/api/file/download?path=' + encodeURIComponent(path);
+        iframe.src = BASE + '/api/file/preview?path=' + encodeURIComponent(path);
+        modal.classList.add('open');
+    } else {
+        // Неподдерживаемый тип — скачиваем
+        window.open(BASE + '/api/file/download?path=' + encodeURIComponent(path), '_blank');
+    }
+}
+
+// ════ УТИЛИТЫ ════════════════════════════════════════════════════════════════
+function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Парсинг даты dd.MM.yyyy или ISO
+function parseRuDate(d) {
+    if (!d || d === '-') return null;
+    // dd.MM.yyyy
+    const m = d.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+    // ISO yyyy-MM-dd
+    const iso = new Date(d);
+    return isNaN(iso) ? null : iso;
+}
+
+function fmtDate(d) {
+    if (!d || d === '-') return '—';
+    const dt = parseRuDate(d);
+    if (!dt) return d;
+    return dt.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+
+function formatDateRange(start, end) {
+    const s = fmtDate(start), e = fmtDate(end);
+    if (s === '—' && e === '—') return '—';
+    if (s === '—') return e;
+    if (e === '—') return s;
+    return `${s} — ${e}`;
+}
+
+const STATUS_CLASSES = {
+    'Выполнение и контроль':'s-active','На паузе (On-Hold)':'s-pause',
+    'Завершён':'s-done','Отменён':'s-cancel','Инициация':'s-init',
+    'Планирование':'s-plan','Утвержден (В бэклоге)':'s-backlog',
+    'Завершение':'s-finish','Отложен':'s-delay',
+};
+
+function statusBadge(s) {
+    return `<span class="badge ${STATUS_CLASSES[s]||'s-done'}">${esc(s||'—')}</span>`;
+}
+
+const PRIO_CLASSES = {
+    '0 Срочно':'prio-0','1 Высокий':'prio-1',
+    '2 Средний':'prio-2','3 Обычный':'prio-3','4 Низкий':'prio-4',
+};
+
+function priorityHtml(p) {
+    if (!p || p === '-') return '<span style="color:#D1D5DB">—</span>';
+    return `<span class="${PRIO_CLASSES[p]||'prio-3'}">${esc(p)}</span>`;
+}
+
+function initials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    return ((parts[0] && parts[0][0]) || '') + ((parts[1] && parts[1][0]) || '');
+}
+
+// ════ ЗАПРОСЫ НА ИЗМЕНЕНИЕ ════════════════════════════════════════════════════
+// CR = Change Requests. Ищем документы из папки "Запрос на изменение" по ProjectsBasePath
+// через уже существующий /api/file/list или через детальный API проекта.
+// Так как прямого списочного API нет, собираем данные из уже загруженных проектов
+// и для каждого дёргаем /api/projects/{id} чтобы получить список файлов.
+// Кэшируем результат в crDocs чтобы не повторять запросы.
+
+let crDocs = null; // [{projectId, projectName, fileName, filePath, modified, folder}]
+
+async function loadCRDocs() {
+    if (crDocs !== null) return;
+    const INACTIVE = ['Завершён', 'Отменён'];
+    // Берём все проекты (включая завершённые — ЗНИ могут быть везде)
+    const list = allProjects;
+    const results = [];
+    // Загружаем детали параллельно пачками по 10
+    const BATCH = 10;
+    for (let i = 0; i < list.length; i += BATCH) {
+        const batch = list.slice(i, i + BATCH);
+        const details = await Promise.all(
+            batch.map(p =>
+                fetch(BASE + `/api/projects/${p.projectId}`)
+                    .then(r => r.ok ? r.json() : null)
+                    .catch(() => null)
+            )
+        );
+        for (const d of details) {
+            if (!d || !d.folders) continue;
+            for (const folder of d.folders) {
+                const fn = (folder.name || '').toLowerCase();
+                if (!fn.includes('запрос') && !fn.includes('изменени')) continue;
+                for (const file of (folder.files || [])) {
+                    results.push({
+                        projectId:   d.projectId,
+                        projectName: d.name,
+                        fileName:    file.name,
+                        filePath:    file.path,
+                        modified:    file.modified || '',
+                        folder:      folder.name,
+                    });
+                }
+            }
+        }
+    }
+    crDocs = results;
+}
+
+function buildCRProjectFilter() {
+    const sel = document.getElementById('crFilterProject');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Все проекты</option>';
+    if (!crDocs) return;
+    const projects = [...new Map(crDocs.map(d => [d.projectId, d.projectName])).entries()]
+        .sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+    for (const [id, name] of projects) {
+        const o = document.createElement('option');
+        o.value = id; o.textContent = `${id} — ${name}`;
+        sel.appendChild(o);
+    }
+    if (current) sel.value = current;
+}
+
+function renderCRTable() {
+    const tbody  = document.getElementById('crTbody');
+    const filter = document.getElementById('crFilterProject').value;
+
+    if (!crDocs) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:#9CA3AF">Загрузка...</td></tr>`;
+        loadCRDocs().then(() => { buildCRProjectFilter(); renderCRTable(); });
+        return;
+    }
+
+    let list = crDocs;
+    if (filter) list = list.filter(d => String(d.projectId) === String(filter));
+
+    document.getElementById('crCount').textContent = `Документов: ${list.length}`;
+
+    if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:#9CA3AF">Документов не найдено</td></tr>`;
+        return;
+    }
+
+    // Сортировка: по дате изменения убывающей
+    list = list.slice().sort((a, b) => {
+        if (!a.modified && !b.modified) return 0;
+        if (!a.modified) return 1;
+        if (!b.modified) return -1;
+        return b.modified.localeCompare(a.modified);
+    });
+
+    const extIcon = name => {
+        const ext = (name.split('.').pop() || '').toLowerCase();
+        const colors = { docx:'#2563EB', doc:'#2563EB', xlsx:'#16A34A', xls:'#16A34A',
+                         pdf:'#DC2626', pptx:'#D97706', ppt:'#D97706', txt:'#6B7280' };
+        const c = colors[ext] || '#6B7280';
+        return `<span style="display:inline-block;background:${c};color:#fff;font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;min-width:32px;text-align:center">${ext.toUpperCase()}</span>`;
+    };
+
+    const fmtMod = s => {
+        if (!s) return '—';
+        const d = new Date(s);
+        if (isNaN(d)) return s;
+        return d.toLocaleDateString('ru-RU', {day:'2-digit', month:'2-digit', year:'numeric'});
+    };
+
+    tbody.innerHTML = list.map(d => `
+        <tr onclick="loadDetail(${d.projectId})">
+          <td style="font-weight:600;color:#6B7280">${d.projectId}</td>
+          <td style="font-size:12px">${esc(d.projectName)}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              ${extIcon(d.fileName)}
+              <span style="font-size:12px">${esc(d.fileName)}</span>
+            </div>
+          </td>
+          <td style="font-size:12px;color:#6B7280">${esc(d.folder)}</td>
+          <td style="font-size:12px;white-space:nowrap">${fmtMod(d.modified)}</td>
+          <td>
+            <button class="cr-open-btn" onclick="event.stopPropagation();openFile('${esc(d.filePath)}')">Открыть</button>
+          </td>
+        </tr>`).join('');
+}
+/* ── Ресурсный план ───────────────────────────────────── */
+
+let resourceViewActive = false;
+let resourceReferenceLoaded = false;
+let resourceProjects = [];
+
+function resourceApiUrl(path = '') {
+    const base = `${BASE}api/resource-plan`;
+    return path
+        ? `${base}/${String(path).replace(/^\/+/, '')}`
+        : base;
+}
+
+function resourceMonthToApiValue() {
+    const value = document.getElementById('resourcePeriod').value;
+    if (!value) return '';
+    return `${value}-01`;
+}
+
+function resourceFormatDate(value) {
+    if (!value) return '—';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+
+    return date.toLocaleString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function resourceEscape(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+function resourceShowMessage(text, type) {
+    const box = document.getElementById('resourceMessage');
+    box.textContent = text;
+    box.className = `resource-message show ${type}`;
+
+    window.clearTimeout(resourceShowMessage.timer);
+    resourceShowMessage.timer = window.setTimeout(() => {
+        box.className = 'resource-message';
+    }, 6000);
+}
+
+function resourceSetDefaultPeriod() {
+    const input = document.getElementById('resourcePeriod');
+
+    if (input.value) return;
+
+    const now = new Date();
+    input.value =
+        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+let resourceCurrentKind = 'Project';
+let resourceEmployees = [];
+let resourceOperationalItems = [];
+let resourceVacationItems = [];
+
+function resourceSetKind(kind) {
+    resourceCurrentKind = kind;
+    document.querySelectorAll('.resource-kind-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.kind === kind);
+    });
+
+    const showProject = kind === 'Project';
+    document.getElementById('resourceProjectField').style.display = showProject ? '' : 'none';
+    document.getElementById('resourceActivityField').style.display = showProject ? 'none' : '';
+
+    // Заполняем список активностей для Operational/Vacation
+    if (!showProject) {
+        const items = kind === 'Operational' ? resourceOperationalItems : resourceVacationItems;
+        const sel = document.getElementById('resourceActivity');
+        sel.innerHTML = items.map(a =>
+            `<option value="${resourceEscape(a.code)}">${resourceEscape(a.name)}</option>`
+        ).join('');
+        if (items.length > 0) sel.value = items[0].code;
+    }
+}
+
+async function resourceLoadReference() {
+    if (resourceReferenceLoaded) return;
+
+    const response = await fetch(resourceApiUrl('/reference'));
+    if (!response.ok) {
+        throw new Error('Не удалось загрузить список сотрудников и проектов.');
+    }
+
+    const data = await response.json();
+    resourceProjects = data.projectItems ?? [];
+    resourceEmployees = data.employees ?? [];
+    resourceOperationalItems = data.operationalItems ?? [];
+    resourceVacationItems = data.vacationItems ?? [];
+
+    const employeeSelect = document.getElementById('resourceEmployee');
+    employeeSelect.innerHTML =
+        '<option value="">Выберите сотрудника</option>' +
+        resourceEmployees
+            .map(emp => `<option value="${resourceEscape(emp.name)}">${resourceEscape(emp.name)}</option>`)
+            .join('');
+
+    // При выборе сотрудника — обновляем подсказку с лимитом по ставке
+    employeeSelect.addEventListener('change', resourceUpdateCapHint);
+
+    const projectSelect = document.getElementById('resourceProject');
+    projectSelect.innerHTML =
+        '<option value="">Выберите проект</option>' +
+        resourceProjects
+            .map(project =>
+                `<option value="${project.projectId}">` +
+                `#${project.projectId} — ${resourceEscape(project.name)}` +
+                `</option>`)
+            .join('');
+
+    // Заполняем фильтр руководителей (команд)
+    const teamSelect = document.getElementById('resourceTeamFilter');
+    const managers = [...new Set(
+        resourceEmployees
+            .filter(e => e.managerFullName)
+            .map(e => e.managerFullName)
+    )].sort((a,b) => a.localeCompare(b, 'ru'));
+    teamSelect.innerHTML = '<option value="">Все сотрудники</option>' +
+        managers.map(m => `<option value="${resourceEscape(m)}">${resourceEscape(m)} (моя команда)</option>`).join('');
+
+    resourceReferenceLoaded = true;
+}
+
+function resourceUpdateCapHint() {
+    const name = document.getElementById('resourceEmployee').value;
+    const emp = resourceEmployees.find(e =>
+        e.name.toLowerCase() === name.toLowerCase());
+    const cap = emp ? emp.capPercent : 100;
+    const rate = emp ? emp.rate : 1;
+    document.getElementById('resourceCapHint').textContent =
+        `лимит: ${cap.toLocaleString('ru-RU')}% (ставка ${rate})`;
+}
+
+// При вводе часов — автоматически считаем %
+function resourceHoursToPercent() {
+    const hours = parseFloat(document.getElementById('resourceHours').value);
+    if (!hours || hours <= 0) return;
+    // Используем CalendarHoursForMonth из последнего загруженного плана, либо 160 как фолбэк
+    const calendarHours = window.resourceCalendarHours || 160;
+    const percent = (hours / calendarHours * 100).toFixed(2);
+    document.getElementById('resourcePercent').value = percent;
+}
+
+function resourceProjectName(projectId) {
+    const project = resourceProjects.find(x => x.projectId === projectId);
+    return project
+        ? `#${project.projectId} — ${project.name}`
+        : `#${projectId}`;
+}
+
+function resourceRenderPlan(data) {
+    window.resourcePlanData = data;
+
+    // Сохраняем норму часов для пересчёта часы→%
+    if (data.items && data.items.length > 0 && data.items[0].plannedHours != null) {
+        window.resourceCalendarHours = data.items[0].calendarHoursForMonth || 160;
+    }
+
+    const summary = document.getElementById('resourceSummary');
+    const controlTbody = document.getElementById('resourceControlTbody');
+
+    const items = data.items ?? [];
+    const employees = data.employees ?? [];
+    const visibleEmployees = resourceOnlyEmpty
+        ? employees.filter(e => e.status === "Не заполнил")
+        : employees;
+    const planSummary = data.summary ?? {
+        employeesTotal: 0, filledCount: 0, partialCount: 0, emptyCount: 0
+    };
+
+    summary.innerHTML = `
+        <div class="resource-total-card">
+            <div class="resource-total-name">Всего сотрудников</div>
+            <div class="resource-total-value">${planSummary.employeesTotal}</div>
+        </div>
+        <div class="resource-total-card">
+            <div class="resource-total-name">Заполнено (100%)</div>
+            <div class="resource-total-value">${planSummary.filledCount}</div>
+        </div>
+        <div class="resource-total-card">
+            <div class="resource-total-name">Частично заполнено</div>
+            <div class="resource-total-value">${planSummary.partialCount}</div>
+        </div>
+        <div class="resource-total-card overload">
+            <div class="resource-total-name">Не заполнили</div>
+            <div class="resource-total-value">${planSummary.emptyCount}</div>
+        </div>
+    `;
+
+    if (!visibleEmployees.length) {
+        controlTbody.innerHTML =
+            '<tr><td class="resource-empty" colspan="6">' +
+            'Сотрудники не найдены.' +
+            '</td></tr>';
+        return;
+    }
+
+    controlTbody.innerHTML = visibleEmployees.map(emp => {
+        const total = Number(emp.totalPercent);
+        const cap = Number(emp.capPercent || 100);
+        const rate = Number(emp.rate || 1);
+        const statusClass =
+            emp.status === 'Заполнено' ? 'full'
+            : emp.status === 'Частично заполнено' ? 'partial' : 'empty';
+
+        return `
+    <tr class="resource-control-row"
+        ondblclick="resourceSelectEmployee('${resourceEscape(emp.employeeName).replace(/'/g, '&#39;')}')"
+        title="Двойной клик — заполнить план">
+        <td>
+            ${resourceEscape(emp.employeeName)}
+            <button class="resource-preview-btn" onclick="event.stopPropagation();resourceOpenHistory('${resourceEscape(emp.employeeName).replace(/'/g, '&#39;')}')" title="История">📜</button>
+        </td>
+        <td style="font-size:12px;color:#6B7280">${resourceEscape(emp.department || '—')} / ${resourceEscape(emp.sector || '—')}</td>
+        <td><b>${rate.toLocaleString('ru-RU')}</b></td>
+        <td style="font-size:12px;color:#6B7280">${cap.toLocaleString('ru-RU')}%</td>
+        <td><b>${total.toLocaleString('ru-RU')}%</b></td>
+        <td>
+            <span class="resource-status ${statusClass}">${resourceEscape(emp.status)}</span>
+        </td>
+    </tr>`;
+    }).join('');
+}
+
+async function resourceLoadPlan() {
+    const period = resourceMonthToApiValue();
+    if (!period) return;
+
+    const teamFilter = document.getElementById('resourceTeamFilter')?.value || '';
+    let url = resourceApiUrl(`?period=${encodeURIComponent(period)}`);
+    if (teamFilter) {
+        url += `&managerFullName=${encodeURIComponent(teamFilter)}`;
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error('Не удалось загрузить ресурсный план за выбранный месяц.');
+    }
+
+    const data = await response.json();
+    resourceRenderPlan(data);
+}
+
+function resourceShowView() {
+    document.getElementById('mainView').style.display = 'none';
+    document.getElementById('portfolioView').classList.remove('active');
+    document.getElementById('pkView').classList.remove('active');
+
+    const crView = document.getElementById('crView');
+    if (crView) crView.classList.remove('active');
+
+    document.getElementById('resourceView').classList.add('active');
+
+    document.getElementById('btnPortfolio').classList.remove('active');
+    document.getElementById('btnPK').classList.remove('active');
+
+    const btnCR = document.getElementById('btnCR');
+    if (btnCR) btnCR.classList.remove('active');
+
+    document.getElementById('btnResource').classList.add('active');
+
+    portfolioViewActive = false;
+    pkViewActive = false;
+    crViewActive = false;
+    resourceViewActive = true;
+
+    closeDetail();
+}
+
+async function resourceOpen() {
+    closeDetail();
+resourceClosePerson();
+    resourceShowView();
+    resourceSetDefaultPeriod();
+
+    try {
+        await resourceLoadReference();
+        await resourceLoadPlan();
+    } catch (error) {
+        console.error(error);
+        resourceShowMessage(
+            error.message || 'Не удалось открыть ресурсный план.',
+            'error'
+        );
+    }
+}
+
+function resourceShowMain() {
+    resourceClosePerson();
+    document.getElementById('resourceView').classList.remove('active');
+    document.getElementById('btnResource').classList.remove('active');
+
+    document.getElementById('mainView').style.display = 'flex';
+    resourceViewActive = false;
+}
+
+async function resourceSave() {
+    const employeeName = document.getElementById('resourceEmployee').value;
+    const kind = resourceCurrentKind;
+    const periodStart = resourceMonthToApiValue();
+    const comment = document.getElementById('resourceComment').value.trim();
+    const hours = parseFloat(document.getElementById('resourceHours').value) || null;
+    const allocationPercent = parseFloat(document.getElementById('resourcePercent').value) || 0;
+    const button = document.getElementById('btnResourceSave');
+
+    if (!employeeName) { resourceShowMessage('Выберите сотрудника.', 'error'); return; }
+    if (!periodStart) { resourceShowMessage('Выберите месяц.', 'error'); return; }
+
+    let projectId = null;
+    let activityName = null;
+
+    if (kind === 'Project') {
+        projectId = Number(document.getElementById('resourceProject').value);
+        if (!projectId) { resourceShowMessage('Выберите проект.', 'error'); return; }
+    } else {
+        activityName = document.getElementById('resourceActivity').value;
+        if (!activityName) { resourceShowMessage('Выберите активность.', 'error'); return; }
+    }
+
+    if (!hours && (!Number.isFinite(allocationPercent) || allocationPercent <= 0)) {
+        resourceShowMessage('Введите часы или процент загрузки.', 'error');
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Сохранение...';
+
+    try {
+        const response = await fetch(resourceApiUrl(''), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                employeeName,
+                employeeLogin: null,
+                kind,
+                projectId: projectId || undefined,
+                activityName: activityName || undefined,
+                periodStart,
+                allocationPercent: hours ? 0 : allocationPercent,
+                hours: hours,
+                comment
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            resourceShowMessage(result.message || 'Не удалось сохранить назначение.', 'error');
+            return;
+        }
+
+        document.getElementById('resourceProject').value = '';
+        document.getElementById('resourceActivity').value = '';
+        document.getElementById('resourcePercent').value = '';
+        document.getElementById('resourceHours').value = '';
+        document.getElementById('resourceComment').value = '';
+
+        resourceShowMessage(
+            `Сохранено. Итоговая загрузка: ${Number(result.totalPercent).toLocaleString('ru-RU')}%` +
+            (result.capPercent ? ` (лимит ${Number(result.capPercent).toLocaleString('ru-RU')}%)` : ''),
+            'ok'
+        );
+
+        await resourceLoadPlan();
+    } catch (error) {
+        console.error(error);
+        resourceShowMessage('Ошибка соединения при сохранении.', 'error');
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Сохранить';
+    }
+}
+
+async function resourceDeleteAllocation(id) {
+    if (!window.confirm('Удалить это назначение?')) return;
+
+    try {
+        const response = await fetch(resourceApiUrl(`/${id}`), {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            resourceShowMessage('Не удалось удалить назначение.', 'error');
+            return;
+        }
+
+        resourceShowMessage('Назначение удалено.', 'ok');
+        await resourceLoadPlan();
+    } catch (error) {
+        console.error(error);
+        resourceShowMessage('Ошибка соединения при удалении.', 'error');
+    }
+}
+
+document.getElementById('btnResource').addEventListener('click', resourceOpen);
+
+document.getElementById('btnResourceSave').addEventListener('click', resourceSave);
+
+document.getElementById('resourcePeriod').addEventListener('change', async () => {
+    try {
+        await resourceLoadPlan();
+    } catch (error) {
+        console.error(error);
+        resourceShowMessage('Не удалось обновить данные за выбранный месяц.', 'error');
+    }
+});
+function resourceProjectOrActivity(item) {
+    if (item.kind === 'Project' || item.projectId) {
+        return resourceProjectName(item.projectId);
+    }
+    return resourceEscape(item.activityName || '—');
+}
+
+function resourceKindLabel(kind) {
+    if (kind === 'Operational') return ' [Опер.]';
+    if (kind === 'Vacation') return ' [Отпуск]';
+    return '';
+}
+
+function resourceSelectEmployee(employeeName) {
+    const periodInput = document.getElementById('resourcePeriod');
+    const panel = document.getElementById('resourcePersonPanel');
+    const data = window.resourcePlanData ?? { items: [] };
+
+    const selectedItems = (data.items ?? [])
+        .filter(item =>
+            String(item.employeeName).toLowerCase() ===
+            String(employeeName).toLowerCase());
+
+    const total = selectedItems.reduce(
+        (sum, item) => sum + Number(item.allocationPercent || 0),
+        0);
+
+    const periodText = periodInput?.value
+        ? new Date(`${periodInput.value}-01T00:00:00`).toLocaleDateString(
+            'ru-RU', { month: 'long', year: 'numeric' })
+        : '';
+
+    document.getElementById('resourcePersonName').textContent = employeeName;
+    document.getElementById('resourcePersonPeriod').textContent = periodText;
+    document.getElementById('resourcePersonTotal').textContent =
+        `${total.toLocaleString('ru-RU')}%`;
+
+    const itemsHost = document.getElementById('resourcePersonItems');
+
+    if (!selectedItems.length) {
+        itemsHost.innerHTML =
+            '<div class="resource-person-empty">' +
+            'За выбранный месяц назначений пока нет.' +
+            '</div>';
+    } else {
+        itemsHost.innerHTML = selectedItems.map(item => `
+        <div class="resource-person-item">
+            <div class="resource-person-item-main">
+                <div class="resource-person-project">
+                    ${resourceProjectOrActivity(item)}
+                    <span style="font-size:10px;color:#9CA3AF">${resourceKindLabel(item.kind)}</span>
+                </div>
+                <div class="resource-person-comment">
+                    ${resourceEscape(item.comment || 'Без комментария')}
+                    ${item.plannedHours ? ' · ' + Number(item.plannedHours).toLocaleString('ru-RU') + ' ч.' : ''}
+                </div>
+            </div>
+            <div class="resource-person-percent">
+                ${Number(item.allocationPercent).toLocaleString('ru-RU')}%
+            </div>
+            <div class="resource-person-actions">
+                <button class="resource-person-edit" type="button"
+                        onclick="resourceEditAllocation(${item.id})">Изменить</button>
+                <button class="resource-person-delete" type="button"
+                        onclick="resourceDeleteFromPanel(${item.id})">Удалить</button>
+            </div>
+        </div>
+    `).join('');
+    }
+    panel.dataset.employeeName = employeeName;
+    panel.classList.add('open');
+}
+
+function resourceClosePerson() {
+    document.getElementById('resourcePersonPanel').classList.remove('open');
+}
+
+function resourceAddForPerson() {
+    const panel = document.getElementById('resourcePersonPanel');
+    const employeeName = panel.dataset.employeeName || '';
+
+    document.getElementById('resourceEmployee').value = employeeName;
+    resourceClosePerson();
+
+    document.querySelector('.resource-toolbar')
+        .scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    window.setTimeout(() => {
+        document.getElementById('resourceProject').focus();
+    }, 300);
+}
+function resourceEditAllocation(id) {
+    const data = window.resourcePlanData ?? { items: [] };
+    const item = (data.items ?? []).find(x => Number(x.id) === Number(id));
+
+    if (!item) {
+        resourceShowMessage('Не удалось найти назначение для редактирования.', 'error');
+        return;
+    }
+
+    document.getElementById('resourceEmployee').value = item.employeeName;
+    resourceUpdateCapHint();
+
+    const kind = item.kind || 'Project';
+    resourceSetKind(kind);
+
+    if (kind === 'Project' && item.projectId) {
+        document.getElementById('resourceProject').value = String(item.projectId);
+    } else {
+        document.getElementById('resourceActivity').value = item.activityName || '';
+    }
+
+    document.getElementById('resourcePercent').value = item.allocationPercent;
+    document.getElementById('resourceHours').value = item.plannedHours || '';
+    document.getElementById('resourceComment').value = item.comment || '';
+
+    resourceClosePerson();
+
+    document.querySelector('.resource-toolbar')
+        .scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    window.setTimeout(() => {
+        document.getElementById('resourcePercent').focus();
+        document.getElementById('resourcePercent').select();
+    }, 350);
+}
+
+async function resourceDeleteFromPanel(id) {
+    if (!confirm('Удалить это назначение?')) return;
+
+    await resourceDeleteAllocation(id);
+
+    const panel = document.getElementById('resourcePersonPanel');
+    const employeeName = panel.dataset.employeeName;
+
+    if (employeeName) {
+        window.setTimeout(() => resourceSelectEmployee(employeeName), 250);
+    }
+}
+function resourceClose() {
+    document.getElementById('resourceView').classList.remove('active');
+    resourceClosePerson();
+}
+let resourceOnlyEmpty = false;
+
+function resourceCurrentMonthApiValue() {
+    const month = document.getElementById("resourcePeriod").value;
+
+    return month ? `${month}-01` : "";
+}
+
+function resourceGetAnalyticsMonthRange() {
+    const currentMonth = document.getElementById("resourcePeriod").value;
+
+    const fromInput = document.getElementById("resourceAnalyticsFrom");
+    const toInput = document.getElementById("resourceAnalyticsTo");
+
+    if (!fromInput.value) {
+        fromInput.value = currentMonth;
+    }
+
+    if (!toInput.value) {
+        toInput.value = currentMonth;
+    }
+
+    return {
+        from: fromInput.value ? `${fromInput.value}-01` : "",
+        to: toInput.value ? `${toInput.value}-01` : ""
+    };
+}
+
+function resourceDownload(path) {
+    const link = document.createElement("a");
+    link.href = path;
+    link.style.display = "none";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+}
+
+function resourceDownloadCsv() {
+    const current = resourceCurrentMonthApiValue();
+
+    if (!current) {
+        resourceShowMessage("Выберите месяц для выгрузки.", "error");
+        return;
+    }
+
+    resourceDownload(
+        resourceApiUrl(
+            `export/csv?from=${encodeURIComponent(current)}&to=${encodeURIComponent(current)}`
+        )
+    );
+}
+
+function resourceDownloadExcel() {
+    const current = resourceCurrentMonthApiValue();
+
+    if (!current) {
+        resourceShowMessage("Выберите месяц для выгрузки.", "error");
+        return;
+    }
+
+    resourceDownload(
+        resourceApiUrl(
+            `export/excel?from=${encodeURIComponent(current)}&to=${encodeURIComponent(current)}`
+        )
+    );
+}
+
+function resourceToggleOnlyEmpty() {
+    resourceOnlyEmpty = !resourceOnlyEmpty;
+
+    const button = 
+// ── История внесений сотрудника (единая точка входа) ─────────────────
+async function resourceOpenHistory(employeeName) {
+    document.getElementById('resourceHistoryName').textContent = employeeName;
+    document.getElementById('resourceHistoryModal').classList.add('open');
+
+    const tbody = document.getElementById('resourceHistoryTbody');
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9CA3AF;padding:20px">Загрузка...</td></tr>';
+
+    try {
+        const res = await fetch(resourceApiUrl(`/history?employee=${encodeURIComponent(employeeName)}`));
+        if (!res.ok) throw new Error('Не удалось загрузить историю.');
+        const rows = await res.json();
+
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9CA3AF;padding:20px">Нет данных</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = rows.map(r => `
+            <tr>
+                <td>${resourceFormatDate(r.periodStart)}</td>
+                <td>${resourceEscape(r.kind || 'Project')}</td>
+                <td>${resourceEscape(r.projectName || '—')}</td>
+                <td><b>${Number(r.allocationPercent || 0).toLocaleString('ru-RU')}%</b></td>
+                <td>${r.plannedHours ? Number(r.plannedHours).toLocaleString('ru-RU') + ' ч.' : '—'}</td>
+                <td>${resourceEscape(r.comment || '—')}</td>
+                <td style="font-size:11px;color:#6B7280">${resourceEscape(r.updatedBy || '—')}<br>${resourceFormatDate(r.updatedAt)}</td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#EF4444;padding:20px">Ошибка: ' + resourceEscape(e.message) + '</td></tr>';
+    }
+}
+
+function resourceCloseHistory() {
+    document.getElementById('resourceHistoryModal').classList.remove('open');
+}
+
+// ── Блокировка/открытие периодов по группам ───────────────────────────
+async function resourceToggleLockPanel() {
+    const panel = document.getElementById('resourceLockPanel');
+    panel.classList.toggle('open');
+
+    if (panel.classList.contains('open')) {
+        // Загружаем список отделов/секторов для селектора
+        try {
+            const res = await fetch(BASE + '/api/employees/departments');
+            if (!res.ok) return;
+            const data = await res.json();
+
+            const sel = document.getElementById('resourceLockValue');
+            const currentType = document.getElementById('resourceLockGroup').value;
+            const items = currentType === 'Sector' ? (data.sectors || []) : (data.departments || []);
+
+            sel.innerHTML = '<option value="*">Все сотрудники</option>' +
+                items.map(d => `<option value="${resourceEscape(d)}">${resourceEscape(d)}</option>`).join('');
+        } catch (e) { console.error(e); }
+    }
+}
+
+document.getElementById('resourceLockGroup')?.addEventListener('change', async () => {
+    const sel = document.getElementById('resourceLockValue');
+    const type = document.getElementById('resourceLockGroup').value;
+    if (type === 'All') {
+        sel.innerHTML = '<option value="*">Все сотрудники</option>';
+        return;
+    }
+    try {
+        const res = await fetch(BASE + '/api/employees/departments');
+        if (!res.ok) return;
+        const data = await res.json();
+        const items = type === 'Sector' ? (data.sectors || []) : (data.departments || []);
+        sel.innerHTML = '<option value="*">Все сотрудники</option>' +
+            items.map(d => `<option value="${resourceEscape(d)}">${resourceEscape(d)}</option>`).join('');
+    } catch (e) {}
+});
+
+async function resourceSetLock(isOpen) {
+    const period = resourceMonthToApiValue();
+    if (!period) { resourceShowMessage('Выберите месяц.', 'error'); return; }
+
+    const groupType = document.getElementById('resourceLockGroup').value;
+    const groupValue = document.getElementById('resourceLockValue').value;
+    const groupValues = [groupValue];
+
+    try {
+        const res = await fetch(resourceApiUrl('/locks'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                periodStart: period,
+                groupType: groupType,
+                groupValues: groupValues,
+                isOpen: isOpen
+            })
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            resourceShowMessage(err.message || 'Не удалось изменить блокировку.', 'error');
+            return;
+        }
+
+        resourceShowMessage(
+            isOpen ? 'Редактирование открыто.' : 'Редактирование закрыто.',
+            'ok'
+        );
+    } catch (e) {
+        resourceShowMessage('Ошибка соединения.', 'error');
+    }
+}
+
+// Подключение обработчиков на input часов — автопересчёт %
+document.getElementById('resourceHours')?.addEventListener('input', resourceHoursToPercent);
+
+// Кнопки истории и блокировок
+document.getElementById('btnResourceHistory')?.addEventListener('click', () => {
+    // Если выбран сотрудник — открываем его историю, иначе подсказка
+    const emp = document.getElementById('resourceEmployee').value;
+    if (emp) {
+        resourceOpenHistory(emp);
+    } else {
+        resourceShowMessage('Выберите сотрудника в выпадающем списке для просмотра истории.', 'error');
+    }
+});
+
+document.getElementById('btnResourceLock')?.addEventListener('click', resourceToggleLockPanel);
+
+
+document.getElementById("btnResourceOnlyEmpty");
+
+    button.classList.toggle("active", resourceOnlyEmpty);
+
+    button.textContent = resourceOnlyEmpty
+        ? "Показаны незаполненные"
+        : "Только незаполненные";
+
+    resourceRenderPlan(window.resourcePlanData || {});
+}
+
+function resourceFormatMonth(value) {
+    if (!value) {
+        return "—";
+    }
+
+    const source = String(value).slice(0, 7);
+
+    const date = new Date(`${source}-01T00:00:00`);
+
+    if (Number.isNaN(date.getTime())) {
+        return source;
+    }
+
+    return date.toLocaleDateString("ru-RU", {
+        month: "long",
+        year: "numeric"
+    });
+}
+
+function resourceAnalyticsEscape(value) {
+    return resourceEscape(value);
+}
+
+function resourceRenderAnalytics(data) {
+    const items = data.items || [];
+    const employees = data.employees || [];
+    const projects = data.projects || [];
+    const months = data.months || [];
+
+    const totalPercent = items.reduce(
+        (sum, item) => sum + Number(item.allocationPercent || 0),
+        0
+    );
+
+    document.getElementById("analyticsItemsCount").textContent =
+        items.length.toLocaleString("ru-RU");
+
+    document.getElementById("analyticsEmployeesCount").textContent =
+        employees.length.toLocaleString("ru-RU");
+
+    document.getElementById("analyticsProjectsCount").textContent =
+        projects.length.toLocaleString("ru-RU");
+
+    document.getElementById("analyticsTotalPercent").textContent =
+        `${totalPercent.toLocaleString("ru-RU", {
+            maximumFractionDigits: 2
+        })}%`;
+
+    const projectsTbody = document.getElementById("analyticsProjectsTbody");
+
+    projectsTbody.innerHTML = projects.length
+        ? projects.map(project => `
+            <tr>
+                <td title="${resourceAnalyticsEscape(project.projectName)}">
+                    ${resourceAnalyticsEscape(project.projectName)}
+                </td>
+                <td>${Number(project.employeesCount || 0).toLocaleString("ru-RU")}</td>
+                <td>${Number(project.totalPercent || 0).toLocaleString("ru-RU", {
+                    maximumFractionDigits: 2
+                })}%</td>
+            </tr>
+        `).join("")
+        : `
+            <tr>
+                <td colspan="3" class="resource-analytics-empty">
+                    За выбранный период назначений нет.
+                </td>
+            </tr>
+        `;
+
+    const employeesTbody = document.getElementById("analyticsEmployeesTbody");
+
+    employeesTbody.innerHTML = employees.length
+        ? employees.map(employee => `
+            <tr>
+                <td>${resourceAnalyticsEscape(employee.employeeName)}</td>
+                <td>${Number(employee.projectsCount || 0).toLocaleString("ru-RU")}</td>
+                <td>${Number(employee.totalPercent || 0).toLocaleString("ru-RU", {
+                    maximumFractionDigits: 2
+                })}%</td>
+            </tr>
+        `).join("")
+        : `
+            <tr>
+                <td colspan="3" class="resource-analytics-empty">
+                    За выбранный период назначений нет.
+                </td>
+            </tr>
+        `;
+
+    const monthsTbody = document.getElementById("analyticsMonthsTbody");
+
+    monthsTbody.innerHTML = months.length
+        ? months.map(month => `
+            <tr>
+                <td>${resourceFormatMonth(month.period)}</td>
+                <td>${Number(month.employeesCount || 0).toLocaleString("ru-RU")}</td>
+                <td>${Number(month.projectsCount || 0).toLocaleString("ru-RU")}</td>
+                <td>${Number(month.totalPercent || 0).toLocaleString("ru-RU", {
+                    maximumFractionDigits: 2
+                })}%</td>
+            </tr>
+        `).join("")
+        : `
+            <tr>
+                <td colspan="4" class="resource-analytics-empty">
+                    За выбранный период назначений нет.
+                </td>
+            </tr>
+        `;
+}
+
+async function resourceLoadAnalytics() {
+    const range = resourceGetAnalyticsMonthRange();
+
+    if (!range.from || !range.to) {
+        resourceShowMessage("Укажите период аналитики.", "error");
+        return;
+    }
+
+    const button = document.getElementById("btnResourceAnalyticsLoad");
+
+    button.disabled = true;
+    button.textContent = "Загрузка...";
+
+    try {
+        const response = await fetch(
+            resourceApiUrl(
+                `analytics?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`
+            )
+        );
+
+        if (!response.ok) {
+            throw new Error("Не удалось получить аналитику.");
+        }
+
+        const data = await response.json();
+
+        resourceRenderAnalytics(data);
+    }
+    catch (error) {
+        console.error(error);
+        resourceShowMessage(
+            error.message || "Ошибка загрузки аналитики.",
+            "error"
+        );
+    }
+    finally {
+        button.disabled = false;
+        button.textContent = "Обновить";
+    }
+}
+
+function resourceToggleAnalytics() {
+    const panel = document.getElementById("resourceAnalytics");
+
+    panel.classList.toggle("open");
+
+    if (panel.classList.contains("open")) {
+        resourceLoadAnalytics();
+    }
+}
+
+document.getElementById("btnResourceOnlyEmpty")
+    .addEventListener("click", resourceToggleOnlyEmpty);
+
+document.getElementById("btnResourceCsv")
+    .addEventListener("click", resourceDownloadCsv);
+
+document.getElementById("btnResourceExcel")
+    .addEventListener("click", resourceDownloadExcel);
+
+document.getElementById("btnResourceAnalytics")
+    .addEventListener("click", resourceToggleAnalytics);
+
+document.getElementById("btnResourceAnalyticsLoad")
+    .addEventListener("click", resourceLoadAnalytics);
+</script>
+
+<!-- Модальное окно: История внесений сотрудника -->
+<div class="resource-history-modal" id="resourceHistoryModal">
+    <div class="resource-history-box">
+        <button class="resource-history-close" onclick="resourceCloseHistory()">&times;</button>
+        <h3 style="margin:0 0 4px;font-size:18px">История ресурсного плана — <span id="resourceHistoryName"></span></h3>
+        <p style="margin:0 0 8px;font-size:12px;color:#6B7280">Все прошлые назначения сотрудника (единая точка входа вместо Excel/Qlik)</p>
+        <table class="resource-history-table">
+            <thead>
+                <tr>
+                    <th>Период</th>
+                    <th>Вид</th>
+                    <th>Проект / Активность</th>
+                    <th>Загрузка</th>
+                    <th>Часы</th>
+                    <th>Комментарий</th>
+                    <th>Кем / Когда</th>
+                </tr>
+            </thead>
+            <tbody id="resourceHistoryTbody">
+                <tr><td colspan="7" style="text-align:center;color:#9CA3AF;padding:20px">Выберите сотрудника в таблице выше (двойной клик → История)</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Модальное окно: Превью документа -->
+<div class="file-preview-modal" id="filePreviewModal">
+    <div class="file-preview-box">
+        <div class="file-preview-header">
+            <span id="filePreviewName" style="font-weight:600;font-size:14px"></span>
+            <div style="display:flex;gap:12px;align-items:center">
+                <a id="filePreviewDownload" href="#" target="_blank"
+                   style="font-size:12px;color:#2563EB;text-decoration:none">Скачать оригинал</a>
+                <button onclick="document.getElementById('filePreviewModal').classList.remove('open')"
+                        style="border:none;background:none;font-size:22px;cursor:pointer;color:#9CA3AF">&times;</button>
+            </div>
+        </div>
+        <iframe id="filePreviewIframe" class="file-preview-iframe" src="about:blank"></iframe>
+    </div>
+</div>
+
+</body>
+</html>
