@@ -1,0 +1,9 @@
+bin/
+obj/
+*.user
+*.bak
+.vs/
+.git/
+*.log
+PMO_Итоги*.docx
+Руководство*.docx

@@ -1,0 +1,21 @@
+# Build artifacts
+bin/
+obj/
+*.user
+*.bak
+*.suo
+.vs/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+*.env.local
