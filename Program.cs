@@ -47,14 +47,14 @@ static string NormalizeConnectionString(string raw)
     if (raw.StartsWith("Host=", StringComparison.OrdinalIgnoreCase) ||
         raw.StartsWith("Server=", StringComparison.OrdinalIgnoreCase))
     {
-        // Очищаем Host от // префиксов и лишних символов
+        // Убираем Markdown-ссылки: [text](url) → text
+        // Render dashboard иногда оборачивает hostname в кликабельную ссылку
         raw = System.Text.RegularExpressions.Regex.Replace(
-            raw, @"Host\s*=\s*//?", "Host=", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            raw, @"\[([^\]]+)\]\(https?://[^)]+\)", "$1",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        // Очищаем Host от // префиксов
         raw = System.Text.RegularExpressions.Regex.Replace(
-            raw, @"Host\s*=\s*\(([^)]+)\)", "Host=$1", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        // Убираем ) из Host значения
-        raw = System.Text.RegularExpressions.Regex.Replace(
-            raw, @"Host=([^;]*?)\)", "Host=$1", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            raw, @"Host\s*=\s*//+", "Host=", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         if (!raw.Contains("TrustServerCertificate", StringComparison.OrdinalIgnoreCase))
             raw += ";TrustServerCertificate=true";
         if (!raw.Contains("SSL Mode", StringComparison.OrdinalIgnoreCase))
@@ -65,6 +65,10 @@ static string NormalizeConnectionString(string raw)
     // Если URL-формат: postgresql://user:pass@host:port/db
     if (raw.StartsWith("postgresql://") || raw.StartsWith("postgres://"))
     {
+        // Убираем Markdown-ссылки на всякий случай
+        raw = System.Text.RegularExpressions.Regex.Replace(
+            raw, @"\[([^\]]+)\]\(https?://[^)]+\)", "$1",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         // Используем Uri для надёжного парсинга
         if (Uri.TryCreate(raw, UriKind.Absolute, out var uri))
         {
@@ -157,7 +161,10 @@ static string NormalizeConnectionString(string raw)
         return string.Join(";", parts2);
     }
 
-    // Не распознали формат — возвращаем как есть
+    // Не распознали формат — пытаемся очистить от Markdown и вернуть
+    raw = System.Text.RegularExpressions.Regex.Replace(
+        raw, @"\[([^\]]+)\]\(https?://[^)]+\)", "$1",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
     return raw;
 }
 
