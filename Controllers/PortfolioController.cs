@@ -144,7 +144,7 @@ public class PortfolioController : ControllerBase
             missingDepartment = all.Count(p => string.IsNullOrWhiteSpace(p.Department)),
             duplicateProjectIds = all.GroupBy(p => p.ProjectId).Where(g => g.Count() > 1).Select(g => g.Key).ToList(),
             lastLoaded = _data.LastLoaded,
-            generatedAt = DateTime.Now,
+            generatedAt = DateTime.UtcNow,
         };
 
         return Ok(checksum);

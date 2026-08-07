@@ -315,14 +315,12 @@ public class ResourcePlanController : ControllerBase
     [HttpPost("locks")]
     public async Task<IActionResult> SetLocks([FromBody] SetLockRequest request)
     {
-        try
-        {
         if (request.GroupValues == null || request.GroupValues.Count == 0)
             return BadRequest(new { message = "Укажите хотя бы одну группу (отдел/сектор) или \"*\" для всех." });
 
         var groupType = request.GroupType is "Department" or "Sector" or "All" ? request.GroupType : "All";
         var month = GetMonthStart(request.PeriodStart);
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
 
         foreach (var groupValue in request.GroupValues)
         {
@@ -351,11 +349,6 @@ public class ResourcePlanController : ControllerBase
 
         await _db.SaveChangesAsync();
         return Ok(new { ok = true });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message, stack = ex.StackTrace?.Substring(0, Math.Min(800, ex.StackTrace.Length)) });
-        }
     }
 
     private async Task<List<PeriodLockEntity>> GetLocksForPeriod(DateOnly month)
@@ -422,8 +415,6 @@ public class ResourcePlanController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> SaveAllocation([FromBody] SaveResourceAllocationRequest request)
     {
-        try
-        {
         if (string.IsNullOrWhiteSpace(request.EmployeeName))
             return BadRequest(new { message = "Укажите сотрудника." });
 
@@ -510,7 +501,7 @@ public class ResourcePlanController : ControllerBase
             });
         }
 
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
         var isCreate = existing == null;
         string? oldJson = existing != null ? JsonSerializer.Serialize(existing) : null;
 
@@ -565,11 +556,6 @@ public class ResourcePlanController : ControllerBase
         await _db.SaveChangesAsync();
 
         return Ok(new { ok = true, id = existing.ResourceAllocationId, totalPercent = newTotal, capPercent });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message, stack = ex.StackTrace?.Substring(0, Math.Min(800, ex.StackTrace.Length)) });
-        }
     }
 
     // DELETE /api/resource-plan/15
@@ -599,7 +585,7 @@ public class ResourcePlanController : ControllerBase
             OldValueJson = oldJson,
             NewValueJson = null,
             ChangedBy = _user.Login,
-            ChangedAt = DateTime.Now,
+            ChangedAt = DateTime.UtcNow,
         });
         await _db.SaveChangesAsync();
 
