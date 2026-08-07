@@ -186,7 +186,7 @@ public class ProjectsApiController : ControllerBase
 
     // GET /api/projects/diag — диагностика пути к папкам
     [HttpGet("diag")]
-    public IActionResult Diag()
+    public IActionResult Diag([FromServices] IConfiguration config)
     {
         var path = _projectsBasePath;
         bool exists = Directory.Exists(path);
@@ -205,12 +205,25 @@ public class ProjectsApiController : ControllerBase
             error = ex.Message;
         }
 
+        // Диагностика строки подключения (без пароля!)
+        var rawConn = config.GetConnectionString("PmoNavigatorDb") ?? "";
+        var maskedConn = System.Text.RegularExpressions.Regex
+            .Replace(rawConn, @"(password|pass|pwd)=([^;]+)", "$1=***",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        var connPreview = maskedConn.Length > 150 ? maskedConn.Substring(0, 150) + "..." : maskedConn;
+
         return Ok(new
         {
             configuredPath = path,
             exists,
             dirs,
-            error
+            error,
+            connectionStringPreview = connPreview,
+            connectionStringLength = rawConn.Length,
+            startsWithHost = rawConn.Trim().StartsWith("Host=", StringComparison.OrdinalIgnoreCase),
+            startsWithPostgresqlUrl = rawConn.Trim().StartsWith("postgresql://"),
+            startsWithPostgresUrl = rawConn.Trim().StartsWith("postgres://"),
+            startsWithSlash = rawConn.Trim().StartsWith("//"),
         });
     }
 
