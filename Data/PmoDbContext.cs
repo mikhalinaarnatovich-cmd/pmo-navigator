@@ -127,6 +127,27 @@ public class PmoDbContext : DbContext
 
             entity.HasIndex(x => new { x.EmployeeName, x.PeriodStart });
         });
+
+        // ── Приводим все имена таблиц/колонок к нижнему регистру ─────────
+        // PostgreSQL фолдит неэкранированные идентификаторы в lower-case.
+        // Наша raw-SQL миграция (migrate_postgres.sql) создаёт таблицы БЕЗ
+        // кавычек — значит физически они "employees", "fullname" и т.д.
+        // EF Core по умолчанию генерирует запросы с PascalCase в кавычках
+        // ("Employees"), что не совпадает с реальным именем — 42P01 / 500.
+        // Приводим маппинг к тому же регистру, что и raw SQL.
+        foreach (var entity in modelBuilder.Model.GetEntityTypes())
+        {
+            var tableName = entity.GetTableName();
+            if (tableName != null)
+                entity.SetTableName(tableName.ToLowerInvariant());
+
+            foreach (var property in entity.GetProperties())
+            {
+                var columnName = property.GetColumnName();
+                if (columnName != null)
+                    property.SetColumnName(columnName.ToLowerInvariant());
+            }
+        }
     }
 }
 
