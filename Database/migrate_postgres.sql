@@ -1,12 +1,12 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- PMO Навигатор — миграция на PostgreSQL
 -- Создание всех таблиц (включая новые из мастер-плана).
--- Лицензионно-чистая альтернатива MS SQL (PostgreSQL — свободное ПО).
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- Если пересоздаёте базу с нуля:
--- DROP SCHEMA IF EXISTS dbo CASCADE;
--- CREATE SCHEMA dbo;
+-- ── 0. Схема dbo ────────────────────────────────────────────────────────
+-- PostgreSQL не имеет схемы dbo по умолчанию (только public).
+-- Создаём явно — без этого CREATE TABLE dbo.X падает с 3F000.
+CREATE SCHEMA IF NOT EXISTS dbo;
 
 -- ── 1. Справочник сотрудников ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS dbo.Employees (
@@ -22,7 +22,6 @@ CREATE TABLE IF NOT EXISTS dbo.Employees (
     UpdatedAt       TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Индексы для фильтрации по отделу/сектору/руководителю
 CREATE INDEX IF NOT EXISTS IX_Employees_Department  ON dbo.Employees (Department);
 CREATE INDEX IF NOT EXISTS IX_Employees_Sector      ON dbo.Employees (Sector);
 CREATE INDEX IF NOT EXISTS IX_Employees_Manager     ON dbo.Employees (ManagerFullName);
@@ -37,7 +36,7 @@ CREATE TABLE IF NOT EXISTS dbo.WorkCalendars (
     UNIQUE (Year, Month)
 );
 
--- ── 3. Ресурсный план (расширенная версия) ───────────────────────────────
+-- ── 3. Ресурсный план ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS dbo.ResourceAllocations (
     ResourceAllocationId BIGSERIAL PRIMARY KEY,
     EmployeeName    VARCHAR(256) NOT NULL,
@@ -53,15 +52,19 @@ CREATE TABLE IF NOT EXISTS dbo.ResourceAllocations (
     CreatedAt       TIMESTAMP NOT NULL DEFAULT NOW(),
     CreatedBy       VARCHAR(256),
     UpdatedAt       TIMESTAMP NOT NULL DEFAULT NOW(),
-    UpdatedBy       VARCHAR(256),
-    UNIQUE (EmployeeName, COALESCE(ProjectId, -1), Kind, COALESCE(ActivityName, ''), PeriodStart)
+    UpdatedBy       VARCHAR(256)
 );
+
+-- PostgreSQL не поддерживает COALESCE в table-level UNIQUE constraint.
+-- Создаём partial unique index с COALESCE вместо этого.
+CREATE UNIQUE INDEX IF NOT EXISTS UQ_RA_Composite
+    ON dbo.ResourceAllocations (EmployeeName, COALESCE(ProjectId, -1), Kind, COALESCE(ActivityName, ''), PeriodStart);
 
 CREATE INDEX IF NOT EXISTS IX_RA_EmployeePeriod  ON dbo.ResourceAllocations (EmployeeName, PeriodStart);
 CREATE INDEX IF NOT EXISTS IX_RA_Period          ON dbo.ResourceAllocations (PeriodStart);
 CREATE INDEX IF NOT EXISTS IX_RA_Project        ON dbo.ResourceAllocations (ProjectId);
 
--- ── 4. Блокировки периодов по группам ────────────────────────────────────
+-- ── 4. Блокировки периодов ───────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS dbo.PeriodLocks (
     PeriodLockId SERIAL PRIMARY KEY,
     PeriodStart  DATE NOT NULL,
@@ -95,8 +98,7 @@ CREATE INDEX IF NOT EXISTS IX_Audit_ChangedAt      ON dbo.ResourceAllocationAudi
 -- НАЧАЛЬНЫЕ ДАННЫЕ
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- Производственный календарь на 2026 год (Беларусь, приближённые нормы).
--- Точные нормы с учётом праздников и переносов нужно уточнить.
+-- Производственный календарь 2026
 INSERT INTO dbo.WorkCalendars (Year, Month, WorkingDays, WorkingHours) VALUES
 (2026, 1,  20, 160),
 (2026, 2,  20, 160),
@@ -112,53 +114,7 @@ INSERT INTO dbo.WorkCalendars (Year, Month, WorkingDays, WorkingHours) VALUES
 (2026, 12, 22, 176)
 ON CONFLICT (Year, Month) DO NOTHING;
 
--- Стартовые блокировки — все периоды открыты по умолчанию.
--- (не вставляем ничего — отсутствие записи = период открыт)
-
--- ── Импорт сотрудников ────────────────────────────────────────────────────
--- Заполните справочник массовым импортом через /api/employees/bulk-import
--- (CSV: FullName;Login;Department;Sector;ManagerFullName;Rate)
--- или вставьте INSERT'ами вручную ниже.
--- Пример:
--- INSERT INTO dbo.Employees (FullName, Login, Department, Sector, ManagerFullName, Rate) VALUES
--- ('Арнатович Михалина', 'arnatovich_m', 'УБА', 'Сектор бизнес-анализа', 'Иванов Иван', 1.00),
--- ...
--- ON CONFLICT (FullName) DO UPDATE SET
---   Login = EXCLUDED.Login,
---   Department = EXCLUDED.Department,
---   Sector = EXCLUDED.Sector,
---   ManagerFullName = EXCLUDED.ManagerFullName,
---   Rate = EXCLUDED.Rate,
---   UpdatedAt = NOW();
-
--- ═══════════════════════════════════════════════════════════════════════════
--- QLIK: представление для регламентной выгрузки
--- Qlik должен подтягивать данные из этого представления, а не из Excel.
--- ═══════════════════════════════════════════════════════════════════════════
--- Временная версия без JOIN к проектам (пока projects.csv не в БД):
-CREATE OR REPLACE VIEW dbo.vw_ResourcePlanForQlik AS
-SELECT
-    ra.PeriodStart,
-    ra.EmployeeName,
-    ra.EmployeeLogin,
-    ra.Kind,
-    ra.ProjectId,
-    ra.ActivityName,
-    ra.AllocationPercent,
-    ra.PlannedHours,
-    ra.CalendarHoursForMonth,
-    ra.Comment,
-    ra.UpdatedAt,
-    ra.UpdatedBy,
-    e.Rate     AS EmployeeRate,
-    e.Department AS EmployeeDepartment,
-    e.Sector   AS EmployeeSector
-FROM dbo.ResourceAllocations ra
-LEFT JOIN dbo.Employees e ON e.FullName = ra.EmployeeName
-ORDER BY ra.PeriodStart, ra.EmployeeName;
-
--- ── Начальный список сотрудников (из участников проектов, для тестирования) ──
--- Отдел/сектор/руководитель нужно проставить позже через /api/employees или bulk-import.
+-- ── Справочник сотрудников (из участников проектов CSV) ──────────────────
 INSERT INTO dbo.Employees (FullName, Rate) VALUES
 ('Алесич (Антоненко) Анастасия', 1.00),
 ('Ануфриёнок Виктория', 1.00),
@@ -217,3 +173,25 @@ INSERT INTO dbo.Employees (FullName, Rate) VALUES
 ('Шпилёв Андрей', 1.00),
 ('Шульженко Юлианна', 1.00)
 ON CONFLICT (FullName) DO NOTHING;
+
+-- ── Qlik-представление ───────────────────────────────────────────────────
+CREATE OR REPLACE VIEW dbo.vw_ResourcePlanForQlik AS
+SELECT
+    ra.PeriodStart,
+    ra.EmployeeName,
+    ra.EmployeeLogin,
+    ra.Kind,
+    ra.ProjectId,
+    ra.ActivityName,
+    ra.AllocationPercent,
+    ra.PlannedHours,
+    ra.CalendarHoursForMonth,
+    ra.Comment,
+    ra.UpdatedAt,
+    ra.UpdatedBy,
+    e.Rate       AS EmployeeRate,
+    e.Department AS EmployeeDepartment,
+    e.Sector     AS EmployeeSector
+FROM dbo.ResourceAllocations ra
+LEFT JOIN dbo.Employees e ON e.FullName = ra.EmployeeName
+ORDER BY ra.PeriodStart, ra.EmployeeName;
