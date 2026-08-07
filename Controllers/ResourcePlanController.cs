@@ -17,18 +17,15 @@ public class ResourcePlanController : ControllerBase
     private readonly PmoDbContext _db;
     private readonly IDataService _data;
     private readonly ICurrentUserService _user;
-    private readonly ILogger<ResourcePlanController> _logger;
 
     public ResourcePlanController(
         PmoDbContext db,
         IDataService data,
-        ICurrentUserService user,
-        ILogger<ResourcePlanController> logger)
+        ICurrentUserService user)
     {
         _db = db;
         _data = data;
         _user = user;
-        _logger = logger;
     }
 
     // ── Фиксированные справочники "не проектной" деятельности ───────────
@@ -57,8 +54,6 @@ public class ResourcePlanController : ControllerBase
     [HttpGet("reference")]
     public async Task<IActionResult> GetReference()
     {
-        try
-        {
         var projects = _data.GetAll()
             .Where(p => p.ProcessType == "Проектная деятельность")
             .OrderBy(p => p.Name)
@@ -121,12 +116,6 @@ public class ResourcePlanController : ControllerBase
             operationalItems = OperationalActivities.Select(a => new { code = a, name = a }),
             vacationItems = VacationActivities.Select(a => new { code = a, name = a }),
         });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "GetReference failed: {Message}", ex.Message);
-            return StatusCode(500, new { error = ex.Message, detail = ex.InnerException?.Message, stack = ex.StackTrace?.Substring(0, Math.Min(500, ex.StackTrace.Length)) });
-        }
     }
 
     // GET /api/resource-plan?period=2026-08-01&managerFullName=Иванов+Иван
