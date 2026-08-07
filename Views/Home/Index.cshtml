@@ -240,7 +240,7 @@ input,select{font-family:inherit}
 .gantt-legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 
 /* ═══ ПОРТФЕЛЬ — экран ══════════════════════════════════════════════════════ */
-.portfolio-view{flex:1;display:none;flex-direction:column;overflow:hidden;background:#F4F5F7}
+.portfolio-view{flex:1;display:none;flex-direction:column;overflow-y:auto;background:#F4F5F7}
 .portfolio-view.active{display:flex}
 
 /* Панель фильтров портфеля */
@@ -314,7 +314,7 @@ input,select{font-family:inherit}
 .pg-empty{text-align:center;padding:60px 20px;color:#9CA3AF;font-size:13px}
 
 /* ═══ ПК — экран ════════════════════════════════════════════════════════════ */
-.pk-view{flex:1;display:none;flex-direction:column;overflow:hidden;background:#F4F5F7}
+.pk-view{flex:1;display:none;flex-direction:column;overflow-y:auto;background:#F4F5F7}
 .pk-view.active{display:flex}
 
 /* Шапка ПК */
@@ -2265,7 +2265,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
       <div class="pk-chart-pane" data-pane="dept" style="display:none;padding:20px">
         <div class="pk-chart-card" style="width:100%">
           <div class="pk-chart-title">Загрузка и здоровье по отделам</div>
-          <canvas id="chartByDept" width="600" height="200"></canvas>
+          <canvas id="chartByDept" width="600" height="450"></canvas>
         </div>
       </div>
 
@@ -3539,6 +3539,20 @@ function pkRenderProjectTypeChart() {
         const t = p.projectType || 'Не указан';
         typeMap[t] = (typeMap[t] || 0) + 1;
     });
+    if (Object.keys(typeMap).length === 0) {
+        const canvas = document.getElementById('chartProjectType');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#9CA3AF';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Нет данных', canvas.width/2, canvas.height/2);
+        }
+        const legend = document.getElementById('legendProjectType');
+        if (legend) legend.innerHTML = '';
+        return;
+    }
     const data = Object.entries(typeMap)
         .sort((a,b) => b[1]-a[1])
         .map(([label, value]) => ({ label, value, color: ['#2563EB','#8B5CF6','#10B981','#F59E0B','#EF4444','#06B6D4','#EC4899'][Object.keys(typeMap).indexOf(label) % 7] || '#9CA3AF' }));
@@ -3637,11 +3651,23 @@ function pkRenderScoringChart() {
         return isNaN(v) ? null : v;
     };
 
-    active.forEach(p => {
-        const x = parseScore(p.strategicAlignment);
-        const y = parseScore(p.complexityRisk);
-        if (x === null || y === null) return;
+    const scoreData = active.map(p => ({
+        p,
+        x: parseScore(p.strategicAlignment),
+        y: parseScore(p.complexityRisk)
+    })).filter(d => d.x !== null && d.y !== null);
 
+    if (scoreData.length === 0) {
+        ctx.fillStyle = '#9CA3AF';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Нет данных для скоринга', W/2, H/2);
+        ctx.font = '11px sans-serif';
+        ctx.fillText('Заполните поля «Сложность и Риски» и «Стратегическое соответствие»', W/2, H/2 + 20);
+        return;
+    }
+
+    scoreData.forEach(({p, x, y}) => {
         const px = pad + (x / 5) * plotW;
         const py = H - pad - (y / 5) * plotH;
 

@@ -85,6 +85,9 @@ public class ProjectsApiController : ControllerBase
                 p.HardDeadline,
                 p.DeadlineDate,
                 p.ProcessType,
+                p.ProjectType,
+                p.ComplexityRisk,
+                p.StrategicAlignment,
             })
         });
     }
