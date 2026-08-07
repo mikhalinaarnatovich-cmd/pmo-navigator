@@ -41,19 +41,68 @@ static string NormalizeConnectionString(string raw)
     if (string.IsNullOrWhiteSpace(raw))
         return raw;
 
-    raw = raw.Trim();
+    raw = raw.Trim().Trim('(', ')').Trim();
 
-    // Если уже в формате ключ=значение — оставляем как есть
-    if (raw.StartsWith("Host=") || raw.StartsWith("Server="))
+    // Если уже в формате ключ=значение — чистим и возвращаем
+    if (raw.StartsWith("Host=", StringComparison.OrdinalIgnoreCase) ||
+        raw.StartsWith("Server=", StringComparison.OrdinalIgnoreCase))
+    {
+        // Очищаем Host от // префиксов и лишних символов
+        raw = System.Text.RegularExpressions.Regex.Replace(
+            raw, @"Host\s*=\s*//?", "Host=", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        raw = System.Text.RegularExpressions.Regex.Replace(
+            raw, @"Host\s*=\s*\(([^)]+)\)", "Host=$1", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        // Убираем ) из Host значения
+        raw = System.Text.RegularExpressions.Regex.Replace(
+            raw, @"Host=([^;]*?)\)", "Host=$1", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (!raw.Contains("TrustServerCertificate", StringComparison.OrdinalIgnoreCase))
+            raw += ";TrustServerCertificate=true";
+        if (!raw.Contains("SSL Mode", StringComparison.OrdinalIgnoreCase))
+            raw += ";SSL Mode=Require";
         return raw;
+    }
 
     // Если URL-формат: postgresql://user:pass@host:port/db
     if (raw.StartsWith("postgresql://") || raw.StartsWith("postgres://"))
     {
-        // Удаляем схему
-        var rest = raw.Substring(raw.IndexOf("//") + 2);
+        // Используем Uri для надёжного парсинга
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var uri))
+        {
+            var host = uri.Host;
+            var port = uri.Port > 0 ? uri.Port.ToString() : "5432";
+            var database = uri.AbsolutePath.TrimStart('/');
+            // Убираем query string
+            var qIdx = database.IndexOf('?');
+            if (qIdx >= 0) database = database.Substring(0, qIdx);
 
-        // Разделяем credentials@host/db
+            var userInfo = uri.UserInfo;
+            string user = "", pass = "";
+            if (!string.IsNullOrEmpty(userInfo))
+            {
+                var colonIdx = userInfo.IndexOf(':');
+                if (colonIdx >= 0)
+                {
+                    user = Uri.UnescapeDataString(userInfo.Substring(0, colonIdx));
+                    pass = Uri.UnescapeDataString(userInfo.Substring(colonIdx + 1));
+                }
+                else
+                {
+                    user = Uri.UnescapeDataString(userInfo);
+                }
+            }
+
+            var parts = new List<string> { $"Host={host}", $"Port={port}" };
+            if (!string.IsNullOrEmpty(database)) parts.Add($"Database={database}");
+            if (!string.IsNullOrEmpty(user)) parts.Add($"Username={user}");
+            if (!string.IsNullOrEmpty(pass)) parts.Add($"Password={pass}");
+            parts.Add("TrustServerCertificate=true");
+            parts.Add("SSL Mode=Require");
+
+            return string.Join(";", parts);
+        }
+
+        // Фолбэк: ручной парсинг если Uri не справился
+        var rest = raw.Substring(raw.IndexOf("//") + 2);
         string creds = "", hostPart = rest;
         var atIdx = rest.IndexOf('@');
         if (atIdx >= 0)
@@ -62,58 +111,60 @@ static string NormalizeConnectionString(string raw)
             hostPart = rest.Substring(atIdx + 1);
         }
 
-        // credentials: user:pass
-        string user = "", pass = "";
+        string user2 = "", pass2 = "";
         if (!string.IsNullOrEmpty(creds))
         {
             var colonIdx = creds.IndexOf(':');
             if (colonIdx >= 0)
             {
-                user = Uri.UnescapeDataString(creds.Substring(0, colonIdx));
-                pass = Uri.UnescapeDataString(creds.Substring(colonIdx + 1));
+                user2 = Uri.UnescapeDataString(creds.Substring(0, colonIdx));
+                pass2 = Uri.UnescapeDataString(creds.Substring(colonIdx + 1));
             }
             else
             {
-                user = Uri.UnescapeDataString(creds);
+                user2 = Uri.UnescapeDataString(creds);
             }
         }
 
-        // hostPart: host:port/database?params
-        string host = "", port = "5432", database = "";
+        string host2 = "", port2 = "5432", database2 = "";
         var slashIdx = hostPart.IndexOf('/');
         var hostPort = slashIdx >= 0 ? hostPart.Substring(0, slashIdx) : hostPart;
-        database = slashIdx >= 0 ? hostPart.Substring(slashIdx + 1) : "";
+        database2 = slashIdx >= 0 ? hostPart.Substring(slashIdx + 1) : "";
+        var qIdx2 = database2.IndexOf('?');
+        if (qIdx2 >= 0) database2 = database2.Substring(0, qIdx2);
 
-        // Убираем query string из database
-        var qIdx = database.IndexOf('?');
-        if (qIdx >= 0) database = database.Substring(0, qIdx);
-
-        // host:port
         var portColon = hostPort.LastIndexOf(':');
         if (portColon >= 0 && int.TryParse(hostPort.Substring(portColon + 1), out _))
         {
-            host = hostPort.Substring(0, portColon);
-            port = hostPort.Substring(portColon + 1);
+            host2 = hostPort.Substring(0, portColon);
+            port2 = hostPort.Substring(portColon + 1);
         }
         else
         {
-            host = hostPort;
+            host2 = hostPort;
         }
 
-        var parts = new List<string> { $"Host={host}", $"Port={port}" };
-        if (!string.IsNullOrEmpty(database)) parts.Add($"Database={database}");
-        if (!string.IsNullOrEmpty(user)) parts.Add($"Username={user}");
-        if (!string.IsNullOrEmpty(pass)) parts.Add($"Password={pass}");
-        parts.Add("TrustServerCertificate=true");
-        parts.Add("SSL Mode=Require");
+        // Чистим host от // и )
+        host2 = host2.TrimStart('/').TrimEnd(')');
 
-        return string.Join(";", parts);
+        var parts2 = new List<string> { $"Host={host2}", $"Port={port2}" };
+        if (!string.IsNullOrEmpty(database2)) parts2.Add($"Database={database2}");
+        if (!string.IsNullOrEmpty(user2)) parts2.Add($"Username={user2}");
+        if (!string.IsNullOrEmpty(pass2)) parts2.Add($"Password={pass2}");
+        parts2.Add("TrustServerCertificate=true");
+        parts2.Add("SSL Mode=Require");
+
+        return string.Join(";", parts2);
     }
 
+    // Не распознали формат — возвращаем как есть
     return raw;
 }
 
-Console.WriteLine($"[Startup] Connection string detected: {(connStr.StartsWith("Host=") ? "PostgreSQL (key=value)" : connStr.Contains("Port=5432") ? "PostgreSQL" : "MS SQL / unknown")}");
+// Логируем формат строки подключения (без пароля!)
+var safeLog = System.Text.RegularExpressions.Regex.Replace(connStr, @"Password=([^;]+)", "Password=***");
+Console.WriteLine($"[Startup] Connection string detected: {(connStr.StartsWith("Host=") ? "PostgreSQL (key=value)" : connStr.Contains("Port=5432") ? "PostgreSQL" : connStr.Contains("postgresql://") || connStr.Contains("postgres://") ? "PostgreSQL (URL)" : "MS SQL / unknown")}");
+Console.WriteLine($"[Startup] Connection string (masked): {safeLog.Substring(0, Math.Min(60, safeLog.Length))}...");
 
 if (connStr.StartsWith("Host=") || connStr.Contains("Port=5432"))
 {
