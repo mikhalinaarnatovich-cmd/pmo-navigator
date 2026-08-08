@@ -59,12 +59,23 @@ public class PortfolioController : ControllerBase
             decimal.TryParse(s?.Replace(',', '.'), System.Globalization.NumberStyles.Any,
                 System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : null;
 
+        // "Сложность и Риски" в исходных данных — текстовая категория (Низкая/Средняя/Высокая),
+        // а не число. Переводим на числовую шкалу 1-5, чтобы совпадать по масштабу
+        // со "Стратегическим соответствием" (тоже 1-5) и рисовать точки на графике.
+        decimal? ParseComplexity(string s) => s?.Trim() switch
+        {
+            "Низкая" => 1.5m,
+            "Средняя" => 3m,
+            "Высокая" => 4.5m,
+            _ => ParseScore(s),
+        };
+
         var scoring = all
             .Select(p => new
             {
                 projectId = p.ProjectId,
                 name = p.Name,
-                x = ParseScore(p.ComplexityRisk),
+                x = ParseComplexity(p.ComplexityRisk),
                 y = ParseScore(p.StrategicAlignment),
                 totalScore = ParseScore(p.TotalScore),
             })

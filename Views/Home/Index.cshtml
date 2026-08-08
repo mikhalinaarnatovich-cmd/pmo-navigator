@@ -117,7 +117,7 @@ input,select{font-family:inherit}
   font-size:11px;font-weight:600;padding:3px 9px;border-radius:12px;white-space:nowrap}
 .badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .s-active{background:#DCFCE7;color:#166534}.s-active::before{background:#16A34A}
-.s-pause{background:#FEF3C7;color:#92400E}.s-pause::before{background:#D97706}
+.s-pause{background:#EDE9FE;color:#5B21B6}.s-pause::before{background:#8B5CF6}
 .s-done{background:#F3F4F6;color:#6B7280}.s-done::before{background:#9CA3AF}
 .s-init{background:#EDE9FE;color:#5B21B6}.s-init::before{background:#7C3AED}
 .s-plan{background:#DBEAFE;color:#1E40AF}.s-plan::before{background:#2563EB}
@@ -226,7 +226,7 @@ input,select{font-family:inherit}
   font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden}
 .gantt-bar.active{background:#2563EB}
 .gantt-bar.done{background:#9CA3AF}
-.gantt-bar.pause{background:#D97706}
+.gantt-bar.pause{background:#8B5CF6}
 .gantt-bar.overdue{background:#DC2626}
 .gantt-bar.fact{background:#059669}
 .gantt-axis{display:flex;margin-left:138px;margin-bottom:4px;font-size:10px;color:#9CA3AF}
@@ -293,7 +293,7 @@ input,select{font-family:inherit}
 .pg-bar:hover{opacity:.85}
 .pg-bar.pg-active{background:#4F46E5}
 .pg-bar.pg-plan{background:#2563EB}
-.pg-bar.pg-pause{background:#D97706}
+.pg-bar.pg-pause{background:#8B5CF6}
 .pg-bar.pg-done{background:#9CA3AF;opacity:.7;border:1px solid #6B7280}
 .pg-bar.pg-init{background:#7C3AED}
 .pg-bar.pg-finish{background:#0284C7}
@@ -2153,7 +2153,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
     <div class="pg-legend">
       <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#4F46E5"></div>Выполнение и контроль</div>
       <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#2563EB"></div>Планирование</div>
-      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#D97706"></div>На паузе</div>
+      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#8B5CF6"></div>На паузе</div>
       <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#0284C7"></div>Завершение</div>
       <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#9CA3AF"></div>Завершён</div>
       <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#DC2626"></div>Просрочен / Отменён</div>
@@ -3458,7 +3458,7 @@ function updatePKCharts() {
         'Выполнение и контроль': '#10B981',
         'Планирование': '#3B82F6',
         'Инициация': '#8B5CF6',
-        'На паузе (On-Hold)': '#F59E0B',
+        'На паузе (On-Hold)': '#8B5CF6',
         'Завершение': '#0891B2',
         'Утвержден (В бэклоге)': '#D97706',
     };
@@ -4719,7 +4719,15 @@ function resourceDownloadExcel() {
 function resourceToggleOnlyEmpty() {
     resourceOnlyEmpty = !resourceOnlyEmpty;
 
-    const button = 
+    const button = document.getElementById("btnResourceOnlyEmpty");
+    button.classList.toggle("active", resourceOnlyEmpty);
+    button.textContent = resourceOnlyEmpty
+        ? "Показаны незаполненные"
+        : "Только незаполненные";
+
+    resourceRenderPlan(window.resourcePlanData || {});
+}
+
 // ── История внесений сотрудника (единая точка входа) ─────────────────
 async function resourceOpenHistory(employeeName) {
     document.getElementById('resourceHistoryName').textContent = employeeName;
@@ -4847,18 +4855,6 @@ document.getElementById('btnResourceHistory')?.addEventListener('click', () => {
 });
 
 document.getElementById('btnResourceLock')?.addEventListener('click', resourceToggleLockPanel);
-
-
-document.getElementById("btnResourceOnlyEmpty");
-
-    button.classList.toggle("active", resourceOnlyEmpty);
-
-    button.textContent = resourceOnlyEmpty
-        ? "Показаны незаполненные"
-        : "Только незаполненные";
-
-    resourceRenderPlan(window.resourcePlanData || {});
-}
 
 function resourceFormatMonth(value) {
     if (!value) {
