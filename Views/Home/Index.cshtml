@@ -2286,7 +2286,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
       </div>
       <div style="position:relative;flex:1;max-width:260px">
         <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#9CA3AF;pointer-events:none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input class="pk-filter" id="pkSearch" type="text" placeholder="ID или название..." oninput="renderPKTable()" style="padding-left:28px;width:100%">
+        <input class="pk-filter" id="pkSearch" type="text" placeholder="ID или название..." style="padding-left:28px;width:100%">
       </div>
       <label style="font-size:11px;color:#6B7280;font-weight:600;margin-left:8px">Статус</label>
       <select class="pk-filter" id="pkFilterStatus" onchange="renderPKTable()">
@@ -2504,6 +2504,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 400);
 
     let searchTimer;
+    // Debounce for PK search
+    let pkSearchTimer;
+    document.getElementById('pkSearch')?.addEventListener('input', e => {
+        clearTimeout(pkSearchTimer);
+        pkSearchTimer = setTimeout(() => renderPKTable(), 250);
+    });
+
     document.getElementById('searchInput').addEventListener('input', e => {
         clearTimeout(searchTimer);
         searchTimer = setTimeout(() => {
@@ -2676,8 +2683,10 @@ function renderTable() {
         return;
     }
 
+    const MAX_ROWS = 150;
+    const visible = list.slice(0, MAX_ROWS);
     const todayMs = new Date().setHours(0,0,0,0);
-    tbody.innerHTML = list.map(p => {
+    tbody.innerHTML = visible.map(p => {
         const isOverdueRow = p.planEnd && p.planEnd !== '-'
             && new Date(p.planEnd).getTime() < todayMs
             && p.status !== 'Завершён' && p.status !== 'Отменён';
@@ -2702,6 +2711,9 @@ function renderTable() {
         <td class="col-prio">${priorityHtml(p.priority)}</td>
       </tr>`;
     }).join('');
+    if (list.length > MAX_ROWS) {
+        tbody.innerHTML += `<tr><td colspan="7" style="text-align:center;padding:12px;color:#9CA3AF;font-size:12px">Показано ${MAX_ROWS} из ${list.length}. Уточните поиск, чтобы увидеть остальные.</td></tr>`;
+    }
 }
 
 // ════ КАРТОЧКА ПРОЕКТА ═══════════════════════════════════════════════════════
