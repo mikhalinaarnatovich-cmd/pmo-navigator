@@ -73,6 +73,10 @@ input,select{font-family:inherit}
 .dash-counter-deadline .dash-counter-value{color:#7C3AED}
 .dash-counter-done .dash-counter-value{color:#6B7280}
 .dash-charts-row{display:flex;gap:12px;padding:12px 20px;background:#fff;flex-wrap:wrap}
+/* Панели вкладок дашборда: видимость через класс .active, а не инлайн-display */
+.pk-chart-pane[data-dpane]{display:none;padding:20px;width:100%}
+.pk-chart-pane[data-dpane].active{display:block}
+.pk-chart-pane[data-dpane="health"].active{display:flex;gap:24px;flex-wrap:wrap}
 @@keyframes spin{to{transform:rotate(360deg)}}
 
 /* Body */
@@ -2277,7 +2281,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         Скоринг (матрица)</button>
     </div>
     <div class="dash-charts-row" id="dashChartsRow">
-      <div class="pk-chart-pane" data-dpane="health" style="display:flex;gap:24px;flex-wrap:wrap;padding:20px;width:100%">
+      <div class="pk-chart-pane active" data-dpane="health">
         <div class="pk-chart-card" style="max-width:480px">
           <div class="pk-chart-title">Здоровье портфеля</div>
           <canvas id="dashChartHealth" width="200" height="200"></canvas>
@@ -2289,27 +2293,27 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
           <div class="pk-chart-legend" id="dashLegendStatus"></div>
         </div>
       </div>
-      <div class="pk-chart-pane" data-dpane="status" style="display:none;padding:20px;width:100%">
+      <div class="pk-chart-pane" data-dpane="status">
         <div class="pk-chart-card" style="max-width:480px">
           <div class="pk-chart-title">Статус проекта</div>
           <canvas id="dashChartStatus2" width="200" height="200"></canvas>
           <div class="pk-chart-legend" id="dashLegendStatus2"></div>
         </div>
       </div>
-      <div class="pk-chart-pane" data-dpane="type" style="display:none;padding:20px;width:100%">
+      <div class="pk-chart-pane" data-dpane="type">
         <div class="pk-chart-card">
           <div class="pk-chart-title">Распределение по типам проектов</div>
           <canvas id="dashChartType" width="300" height="200"></canvas>
           <div class="pk-chart-legend" id="dashLegendType"></div>
         </div>
       </div>
-      <div class="pk-chart-pane" data-dpane="dept" style="display:none;padding:20px;width:100%">
+      <div class="pk-chart-pane" data-dpane="dept">
         <div class="pk-chart-card" style="width:100%">
           <div class="pk-chart-title">Загрузка и здоровье по отделам</div>
           <canvas id="dashChartDept" width="600" height="450"></canvas>
         </div>
       </div>
-      <div class="pk-chart-pane" data-dpane="scoring" style="display:none;padding:20px;width:100%">
+      <div class="pk-chart-pane" data-dpane="scoring">
         <div class="pk-chart-card" style="width:100%">
           <div class="pk-chart-title">Матрица скоринга: Сложность/Риски × Стратегическое соответствие</div>
           <canvas id="dashChartScoring" width="700" height="400"></canvas>
@@ -3878,7 +3882,7 @@ function dashChartSwitch(tab) {
         activeBtn.style.color = "#2563EB";
     }
     document.querySelectorAll("[data-dpane]").forEach(pane => {
-        pane.style.display = (pane.dataset.dpane === tab) ? "" : "none";
+        pane.classList.toggle("active", pane.dataset.dpane === tab);
     });
     if (tab === "type") dashRenderTypeChart();
     if (tab === "dept") dashRenderDeptChart();
