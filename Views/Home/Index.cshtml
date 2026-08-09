@@ -50,6 +50,29 @@ input,select{font-family:inherit}
   display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s}
 .header-pk:hover{background:rgba(5,150,105,.35)}
 .header-pk.active{background:#059669;border-color:#059669;color:#fff}
+/* Кнопка Дашборд в header */
+.header-dashboard{background:rgba(245,158,11,.18);border:1px solid rgba(245,158,11,.32);
+  color:#FCD34D;font-size:12px;padding:5px 14px;border-radius:6px;
+  display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s}
+.header-dashboard:hover{background:rgba(245,158,11,.32)}
+.header-dashboard.active{background:#F59E0B;border-color:#F59E0B;color:#fff}
+/* Дашборд view */
+.dashboard-view{flex:1;display:none;flex-direction:column;overflow-y:auto;background:#F4F5F7}
+.dashboard-view.active{display:flex}
+.dash-counters{display:flex;gap:12px;padding:10px 20px;background:#fff;border-bottom:1px solid #E5E7EB;flex-shrink:0;flex-wrap:wrap}
+.dash-counter-card{flex:1;min-width:100px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:10px 16px;display:flex;flex-direction:column;gap:2px;cursor:default}
+.dash-counter-card.clickable{cursor:pointer;transition:border-color .15s,background .15s}
+.dash-counter-card.clickable:hover{border-color:#2563EB;background:#EFF6FF}
+.dash-counter-label{font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:.4px}
+.dash-counter-value{font-size:28px;font-weight:700;line-height:1.1}
+.dash-counter-all .dash-counter-value{color:#2563EB}
+.dash-counter-work .dash-counter-value{color:#16A34A}
+.dash-counter-red .dash-counter-value{color:#DC2626}
+.dash-counter-yellow .dash-counter-value{color:#D97706}
+.dash-counter-pause .dash-counter-value{color:#9CA3AF}
+.dash-counter-deadline .dash-counter-value{color:#7C3AED}
+.dash-counter-done .dash-counter-value{color:#6B7280}
+.dash-charts-row{display:flex;gap:12px;padding:12px 20px;background:#fff;flex-wrap:wrap}
 @@keyframes spin{to{transform:rotate(360deg)}}
 
 /* Body */
@@ -1701,6 +1724,16 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
       <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
     </svg>
     ПК
+  <!-- Дашборд -->
+  <button class="header-dashboard" id="btnDashboard">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <rect x="3" y="3" width="7" height="9" rx="1"/>
+      <rect x="14" y="3" width="7" height="5" rx="1"/>
+      <rect x="14" y="12" width="7" height="9" rx="1"/>
+      <rect x="3" y="16" width="7" height="5" rx="1"/>
+    </svg>
+    Дашборд
+  </button>
   </button>
   <!-- Справка -->
   <button class="header-reload" onclick="document.getElementById('helpModal').classList.remove('hidden')">
@@ -2192,6 +2225,98 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
   </div>
 
   <!-- ════ ВИД ПК (Проектный Комитет) ════════════════════════════════════ -->
+  <!-- ════ ДАШБОРД ═════════════════════════════════════════════════════════ -->
+  <div class="dashboard-view" id="dashboardView">
+    <!-- Счётчики -->
+    <div class="dash-counters" id="dashCounters">
+      <div class="dash-counter-card dash-counter-all">
+        <div class="dash-counter-label">Всего проектов</div>
+        <div class="dash-counter-value" id="dashCntAll">—</div>
+      </div>
+      <div class="dash-counter-card dash-counter-work">
+        <div class="dash-counter-label">В работе</div>
+        <div class="dash-counter-value" id="dashCntWork">—</div>
+      </div>
+      <div class="dash-counter-card dash-counter-red clickable" onclick="dashGoPK('red')">
+        <div class="dash-counter-label">Требуется вмешательство</div>
+        <div class="dash-counter-value" id="dashCntRed">—</div>
+      </div>
+      <div class="dash-counter-card dash-counter-yellow clickable" onclick="dashGoPK('yellow')">
+        <div class="dash-counter-label">Есть риски</div>
+        <div class="dash-counter-value" id="dashCntYellow">—</div>
+      </div>
+      <div class="dash-counter-card dash-counter-pause">
+        <div class="dash-counter-label">На паузе</div>
+        <div class="dash-counter-value" id="dashCntPause">—</div>
+      </div>
+      <div class="dash-counter-card dash-counter-deadline">
+        <div class="dash-counter-label">Жёсткие дедлайны</div>
+        <div class="dash-counter-value" id="dashCntDeadline">—</div>
+      </div>
+      <div class="dash-counter-card dash-counter-done">
+        <div class="dash-counter-label">Завершено</div>
+        <div class="dash-counter-value" id="dashCntDone">—</div>
+      </div>
+    </div>
+    <!-- Вкладки графиков -->
+    <div class="pk-chart-tabs" style="display:flex;gap:0;margin-bottom:0;border-bottom:2px solid #E5E7EB;overflow-x:auto">
+      <button class="pk-chart-tab active" data-dashchart="health" onclick="dashChartSwitch('health')"
+              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid #2563EB;color:#2563EB;white-space:nowrap">
+        Здоровье портфеля</button>
+      <button class="pk-chart-tab" data-dashchart="status" onclick="dashChartSwitch('status')"
+              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#6B7280;white-space:nowrap">
+        Статус проекта</button>
+      <button class="pk-chart-tab" data-dashchart="type" onclick="dashChartSwitch('type')"
+              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#6B7280;white-space:nowrap">
+        По типам проектов</button>
+      <button class="pk-chart-tab" data-dashchart="dept" onclick="dashChartSwitch('dept')"
+              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#6B7280;white-space:nowrap">
+        По отделам</button>
+      <button class="pk-chart-tab" data-dashchart="scoring" onclick="dashChartSwitch('scoring')"
+              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#6B7280;white-space:nowrap">
+        Скоринг (матрица)</button>
+    </div>
+    <div class="dash-charts-row" id="dashChartsRow">
+      <div class="pk-chart-pane" data-dpane="health" style="display:flex;gap:24px;flex-wrap:wrap;padding:20px;width:100%">
+        <div class="pk-chart-card" style="max-width:480px">
+          <div class="pk-chart-title">Здоровье портфеля</div>
+          <canvas id="dashChartHealth" width="200" height="200"></canvas>
+          <div class="pk-chart-legend" id="dashLegendHealth"></div>
+        </div>
+        <div class="pk-chart-card" style="max-width:480px">
+          <div class="pk-chart-title">Статус проекта</div>
+          <canvas id="dashChartStatus" width="200" height="200"></canvas>
+          <div class="pk-chart-legend" id="dashLegendStatus"></div>
+        </div>
+      </div>
+      <div class="pk-chart-pane" data-dpane="status" style="display:none;padding:20px;width:100%">
+        <div class="pk-chart-card" style="max-width:480px">
+          <div class="pk-chart-title">Статус проекта</div>
+          <canvas id="dashChartStatus2" width="200" height="200"></canvas>
+          <div class="pk-chart-legend" id="dashLegendStatus2"></div>
+        </div>
+      </div>
+      <div class="pk-chart-pane" data-dpane="type" style="display:none;padding:20px;width:100%">
+        <div class="pk-chart-card">
+          <div class="pk-chart-title">Распределение по типам проектов</div>
+          <canvas id="dashChartType" width="300" height="200"></canvas>
+          <div class="pk-chart-legend" id="dashLegendType"></div>
+        </div>
+      </div>
+      <div class="pk-chart-pane" data-dpane="dept" style="display:none;padding:20px;width:100%">
+        <div class="pk-chart-card" style="width:100%">
+          <div class="pk-chart-title">Загрузка и здоровье по отделам</div>
+          <canvas id="dashChartDept" width="600" height="450"></canvas>
+        </div>
+      </div>
+      <div class="pk-chart-pane" data-dpane="scoring" style="display:none;padding:20px;width:100%">
+        <div class="pk-chart-card" style="width:100%">
+          <div class="pk-chart-title">Матрица скоринга: Сложность/Риски × Стратегическое соответствие</div>
+          <canvas id="dashChartScoring" width="700" height="400"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="pk-view" id="pkView">
     <!-- Счётчики -->
     <div class="pk-counters" id="pkCounters">
@@ -2204,11 +2329,11 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         <div class="pk-counter-value" id="cntWork">—</div>
       </div>
       <div class="pk-counter-card pk-counter-red">
-        <div class="pk-counter-label">Красные</div>
+        <div class="pk-counter-label">Требуется вмешательство</div>
         <div class="pk-counter-value" id="cntRed">—</div>
       </div>
       <div class="pk-counter-card pk-counter-yellow">
-        <div class="pk-counter-label">Жёлтые</div>
+        <div class="pk-counter-label">Есть риски</div>
         <div class="pk-counter-value" id="cntYellow">—</div>
       </div>
       <div class="pk-counter-card pk-counter-pause">
@@ -2291,9 +2416,9 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
       <label style="font-size:11px;color:#6B7280;font-weight:600;margin-left:8px">Статус</label>
       <select class="pk-filter" id="pkFilterStatus" onchange="renderPKTable()">
         <option value="">Все активные</option>
-        <option value="red">Красный</option>
-        <option value="yellow">Жёлтый</option>
-        <option value="green">Зелёный</option>
+        <option value="red">Требуется вмешательство</option>
+        <option value="yellow">Есть риски</option>
+        <option value="green">В норме</option>
       </select>
       <label style="font-size:11px;color:#6B7280;font-weight:600">Заказчик</label>
       <select class="pk-filter" id="pkFilterCustomer" onchange="renderPKTable()">
@@ -2487,6 +2612,7 @@ let portfolioScale = 'half'; // 'quarter' | 'half' | 'year'
 let portfolioViewActive = false;
 let pkViewActive = false;
 let crViewActive = false;
+let dashboardViewActive = false;
 let pkComments = {}; // { projectId: "comment text" }
 let pkSortField = 'rag';  // 'rag' | 'name' | 'score'
 let pkSortDir   = 'desc'; // для скоринга по умолчанию — высокий вверху
@@ -2585,6 +2711,7 @@ async function reloadData() {
         if (selectedId) loadDetail(selectedId);
         if (portfolioViewActive) renderPortfolioGantt();
         if (pkViewActive) { renderPKTable(); updatePKCounters(); updatePKCharts(); }
+        if (dashboardViewActive) { updateDashboardCounters(); updateDashboardCharts(); }
         if (crViewActive) renderCRTable();
     } finally {
         btn.classList.remove('loading');
@@ -3037,6 +3164,7 @@ function showPortfolio() {
     portfolioViewActive = true;
     pkViewActive = false;
     crViewActive = false;
+    dashboardViewActive = false;
     document.getElementById('mainView').style.display = 'none';
     document.getElementById('sidebarNav').style.display = 'none';
     document.getElementById('portfolioView').classList.add('active');
@@ -3045,6 +3173,8 @@ function showPortfolio() {
     document.getElementById('btnPortfolio').classList.add('active');
     document.getElementById('btnPK').classList.remove('active');
     document.getElementById('btnCR').classList.remove('active');
+    document.getElementById('btnDashboard').classList.remove('active');
+    document.getElementById('dashboardView').classList.remove('active');
     renderPortfolioGantt();
 }
 
@@ -3053,6 +3183,7 @@ function showPK() {
     pkViewActive = true;
     portfolioViewActive = false;
     crViewActive = false;
+    dashboardViewActive = false;
     document.getElementById('mainView').style.display = 'none';
     document.getElementById('sidebarNav').style.display = 'none';
     document.getElementById('pkView').classList.add('active');
@@ -3061,6 +3192,8 @@ function showPK() {
     document.getElementById('btnPK').classList.add('active');
     document.getElementById('btnPortfolio').classList.remove('active');
     document.getElementById('btnCR').classList.remove('active');
+    document.getElementById('btnDashboard').classList.remove('active');
+    document.getElementById('dashboardView').classList.remove('active');
     updatePKCounters();
     updatePKCharts();
     renderPKTable();
@@ -3071,6 +3204,7 @@ function showCR() {
     crViewActive = true;
     pkViewActive = false;
     portfolioViewActive = false;
+    dashboardViewActive = false;
     document.getElementById('mainView').style.display = 'none';
     document.getElementById('sidebarNav').style.display = 'none';
     document.getElementById('crView').classList.add('active');
@@ -3079,6 +3213,8 @@ function showCR() {
     document.getElementById('btnCR').classList.add('active');
     document.getElementById('btnPK').classList.remove('active');
     document.getElementById('btnPortfolio').classList.remove('active');
+    document.getElementById('btnDashboard').classList.remove('active');
+    document.getElementById('dashboardView').classList.remove('active');
     buildCRProjectFilter();
     renderCRTable();
 }
@@ -3088,6 +3224,7 @@ function showMain() {
     portfolioViewActive = false;
     pkViewActive = false;
     crViewActive = false;
+    dashboardViewActive = false;
     document.getElementById('mainView').style.display = '';
     document.getElementById('sidebarNav').style.display = '';
     document.getElementById('portfolioView').classList.remove('active');
@@ -3096,7 +3233,35 @@ function showMain() {
     document.getElementById('btnPortfolio').classList.remove('active');
     document.getElementById('btnPK').classList.remove('active');
     document.getElementById('btnCR').classList.remove('active');
+    document.getElementById('btnDashboard').classList.remove('active');
+    document.getElementById('dashboardView').classList.remove('active');
 }
+
+function showDashboard() {
+    resourceShowMain();
+    dashboardViewActive = true;
+    portfolioViewActive = false;
+    pkViewActive = false;
+    crViewActive = false;
+    document.getElementById('mainView').style.display = 'none';
+    document.getElementById('sidebarNav').style.display = 'none';
+    document.getElementById('dashboardView').classList.add('active');
+    document.getElementById('portfolioView').classList.remove('active');
+    document.getElementById('pkView').classList.remove('active');
+    document.getElementById('crView').classList.remove('active');
+    document.getElementById('btnDashboard').classList.add('active');
+    document.getElementById('btnPortfolio').classList.remove('active');
+    document.getElementById('btnPK').classList.remove('active');
+    document.getElementById('btnCR').classList.remove('active');
+    updateDashboardCounters();
+    updateDashboardCharts();
+}
+
+// Кнопка Дашборд: переключение
+document.getElementById('btnDashboard').addEventListener('click', () => {
+    if (dashboardViewActive) showMain();
+    else showDashboard();
+});
 
 // Кнопка Портфель: переключение
 document.getElementById('btnPortfolio').addEventListener('click', () => {
@@ -3457,9 +3622,9 @@ function updatePKCharts() {
         else green++;
     });
     const healthData = [
-        { label: 'Жёлтые',  value: yellow, color: '#F59E0B' },
-        { label: 'Зелёные', value: green,  color: '#10B981' },
-        { label: 'Красные',  value: red,    color: '#EF4444' },
+        { label: 'Есть риски',  value: yellow, color: '#F59E0B' },
+        { label: 'В норме', value: green,  color: '#10B981' },
+        { label: 'Требуется вмешательство',  value: red,    color: '#EF4444' },
     ].filter(d => d.value > 0);
     drawDonut('chartHealth', 'legendHealth', healthData);
 
@@ -3697,6 +3862,200 @@ function pkRenderScoringChart() {
             ctx.fillText('#' + p.projectId, px + 8, py - 4);
         }
     });
+}
+
+// ════ ДАШБОРД — СЧЁТЧИКИ И ГРАФИКИ ════════════════════════════════════════
+function updateDashboardCounters() {
+    const INACTIVE = ["Завершён", "Отменён"];
+    const active   = allProjects.filter(p => !INACTIVE.includes(p.status));
+    const inWork   = active.filter(p => p.status === "Выполнение и контроль");
+    const reds     = active.filter(p => getPKStatus(p) === "red");
+    const yellows  = active.filter(p => getPKStatus(p) === "yellow");
+    const paused   = active.filter(p => p.status === "На паузе (On-Hold)");
+    const deadlines= active.filter(p => (p.hardDeadline||"").trim().toLowerCase() === "да");
+    const done     = allProjects.filter(p => p.status === "Завершён");
+    document.getElementById("dashCntAll").textContent      = active.length;
+    document.getElementById("dashCntWork").textContent     = inWork.length;
+    document.getElementById("dashCntRed").textContent      = reds.length;
+    document.getElementById("dashCntYellow").textContent   = yellows.length;
+    document.getElementById("dashCntPause").textContent    = paused.length;
+    document.getElementById("dashCntDeadline").textContent = deadlines.length;
+    document.getElementById("dashCntDone").textContent     = done.length;
+}
+
+function updateDashboardCharts() {
+    const active = allProjects.filter(p => !["Завершён","Отменён"].includes(p.status));
+    // 1. Здоровье портфеля
+    let red = 0, yellow = 0, green = 0;
+    active.forEach(p => {
+        const rag = getPKStatus(p);
+        if (rag === "red")    red++;
+        else if (rag === "yellow") yellow++;
+        else green++;
+    });
+    const healthData = [
+        { label: "Требуется вмешательство", value: red,    color: "#EF4444" },
+        { label: "Есть риски",              value: yellow, color: "#F59E0B" },
+        { label: "В норме",                 value: green,  color: "#10B981" },
+    ].filter(d => d.value > 0);
+    drawDonut("dashChartHealth", "dashLegendHealth", healthData);
+    // 2. Статус проекта
+    const statusMap = {};
+    active.forEach(p => { statusMap[p.status] = (statusMap[p.status] || 0) + 1; });
+    const statusColors = {
+        "Выполнение и контроль": "#10B981",
+        "Инициация": "#3B82F6",
+        "Планирование": "#2563EB",
+        "На паузе (On-Hold)": "#8B5CF6",
+        "Завершение": "#0284C7",
+        "Утвержден (В бэклоге)": "#9CA3AF",
+        "Отложен": "#F59E0B",
+    };
+    const statusData = Object.entries(statusMap).map(([label, value]) => ({
+        label, value, color: statusColors[label] || "#9CA3AF"
+    }));
+    drawDonut("dashChartStatus", "dashLegendStatus", statusData);
+    drawDonut("dashChartStatus2", "dashLegendStatus2", statusData);
+    // 3. По типам
+    dashRenderTypeChart();
+    // 4. По отделам
+    dashRenderDeptChart();
+    // 5. Скоринг
+    dashRenderScoringChart();
+}
+
+function dashChartSwitch(tab) {
+    document.querySelectorAll("[data-dashchart]").forEach(btn => {
+        btn.style.borderBottom = "3px solid transparent";
+        btn.style.color = "#6B7280";
+    });
+    const activeBtn = document.querySelector(`[data-dashchart="${tab}"]`);
+    if (activeBtn) {
+        activeBtn.style.borderBottom = "3px solid #2563EB";
+        activeBtn.style.color = "#2563EB";
+    }
+    document.querySelectorAll("[data-dpane]").forEach(pane => {
+        pane.style.display = (pane.dataset.dpane === tab) ? "" : "none";
+    });
+    if (tab === "type") dashRenderTypeChart();
+    if (tab === "dept") dashRenderDeptChart();
+    if (tab === "scoring") dashRenderScoringChart();
+}
+
+function dashRenderTypeChart() {
+    const active = allProjects.filter(p => !["Завершён","Отменён"].includes(p.status));
+    const typeMap = {};
+    active.forEach(p => {
+        const t = p.projectType && p.projectType !== "-" ? p.projectType : "Не указан";
+        typeMap[t] = (typeMap[t] || 0) + 1;
+    });
+    const palette = ["#2563EB","#10B981","#F59E0B","#8B5CF6","#EF4444","#0284C7","#9CA3AF","#4F46E5","#16A34A","#DC2626"];
+    const typeData = Object.entries(typeMap).map(([label,value],i) => ({ label, value, color: palette[i % palette.length] }));
+    drawDonut("dashChartType", "dashLegendType", typeData);
+}
+
+function dashRenderDeptChart() {
+    // Reuse the existing pkRenderDeptChart but on dashChartDept canvas
+    const INACTIVE = ["Завершён","Отменён"];
+    const active = allProjects.filter(p => !INACTIVE.includes(p.status));
+    const deptMap = {};
+    active.forEach(p => {
+        const d = p.department && p.department !== "-" ? p.department : "Не указан";
+        if (!deptMap[d]) deptMap[d] = { total: 0, red: 0, yellow: 0, green: 0 };
+        deptMap[d].total++;
+        const rag = getPKStatus(p);
+        if (rag === "red") deptMap[d].red++;
+        else if (rag === "yellow") deptMap[d].yellow++;
+        else deptMap[d].green++;
+    });
+    const depts = Object.entries(deptMap).sort((a,b) => b[1].total - a[1].total);
+    const canvas = document.getElementById("dashChartDept");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if (depts.length === 0) return;
+    const maxVal = Math.max(...depts.map(([,d]) => d.total));
+    const barH = 28, gap = 6, leftPad = 160, rightPad = 80;
+    const chartH = depts.length * (barH + gap);
+    canvas.height = chartH + 20;
+    const cw = canvas.width;
+    depts.forEach((([dept, d], i) => {
+        const y = i * (barH + gap) + 10;
+        ctx.fillStyle = "#374151";
+        ctx.font = "11px sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText(dept.length > 25 ? dept.slice(0,25) + "..." : dept, leftPad - 8, y + barH/2 + 4);
+        const barW = cw - leftPad - rightPad;
+        const segTotal = d.total;
+        let xOff = leftPad;
+        const segs = [
+            { v: d.red,    c: "#EF4444" },
+            { v: d.yellow, c: "#F59E0B" },
+            { v: d.green,  c: "#10B981" },
+        ];
+        segs.forEach(s => {
+            if (s.v === 0) return;
+            const w = (s.v / maxVal) * barW;
+            ctx.fillStyle = s.c;
+            ctx.fillRect(xOff, y, w, barH - 2);
+            if (s.v > 0 && w > 20) {
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 10px sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(s.v, xOff + w/2, y + barH/2 + 3);
+            }
+            xOff += w;
+        });
+        ctx.fillStyle = "#374151";
+        ctx.font = "11px sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(d.total, xOff + 6, y + barH/2 + 4);
+    }));
+}
+
+function dashRenderScoringChart() {
+    const active = allProjects.filter(p => !["Завершён","Отменён"].includes(p.status));
+    const canvas = document.getElementById("dashChartScoring");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    active.forEach(p => {
+        const score = parseFloat(p.scoring) || 0;
+        const strategic = (p.strategicImportance || "").toLowerCase();
+        let sx = score * 80, sy = 0;
+        const yBase = 350;
+        if (strategic.includes("высок")) sy = 50;
+        else if (strategic.includes("сред")) sy = 175;
+        else if (strategic.includes("низк")) sy = 300;
+        else sy = 175;
+        sx = Math.max(30, Math.min(canvas.width - 20, sx + 40));
+        const rag = getPKStatus(p);
+        ctx.fillStyle = rag === "red" ? "#EF4444" : rag === "yellow" ? "#F59E0B" : "#10B981";
+        ctx.beginPath(); ctx.arc(sx, sy, 6, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#374151";
+        ctx.font = "8px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("#" + p.projectId, sx, sy - 10);
+    });
+    ctx.strokeStyle = "#E5E7EB";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(0, 112); ctx.lineTo(canvas.width, 112); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#6B7280";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("Высокая", 4, 40);
+    ctx.fillText("Средняя", 4, 165);
+    ctx.fillText("Низкая", 4, 290);
+}
+
+function dashGoPK(filter) {
+    showPK();
+    if (filter) {
+        document.getElementById("pkFilterStatus").value = filter;
+        renderPKTable();
+    }
 }
 
 
@@ -4358,6 +4717,7 @@ function resourceShowView() {
     document.getElementById('mainView').style.display = 'none';
     document.getElementById('portfolioView').classList.remove('active');
     document.getElementById('pkView').classList.remove('active');
+    document.getElementById('dashboardView').classList.remove('active');
 
     const crView = document.getElementById('crView');
     if (crView) crView.classList.remove('active');
@@ -4366,6 +4726,7 @@ function resourceShowView() {
 
     document.getElementById('btnPortfolio').classList.remove('active');
     document.getElementById('btnPK').classList.remove('active');
+    document.getElementById('btnDashboard').classList.remove('active');
 
     const btnCR = document.getElementById('btnCR');
     if (btnCR) btnCR.classList.remove('active');
@@ -4375,6 +4736,7 @@ function resourceShowView() {
     portfolioViewActive = false;
     pkViewActive = false;
     crViewActive = false;
+    dashboardViewActive = false;
     resourceViewActive = true;
 
     closeDetail();
