@@ -2315,7 +2315,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
       </div>
       <div class="pk-chart-pane" data-dpane="scoring">
         <div class="pk-chart-card" style="width:100%">
-          <div class="pk-chart-title">Матрица скоринга: Сложность/Риски × Стратегическое соответствие</div>
+          <div class="pk-chart-title">Матрица скоринга: Итоговый балл × Стратегическая важность (размер пузыря — Сложность и Риски)</div>
           <canvas id="dashChartScoring" width="700" height="400"></canvas>
         </div>
       </div>
@@ -3961,40 +3961,78 @@ function dashRenderDeptChart() {
 }
 
 function dashRenderScoringChart() {
-    const active = allProjects.filter(p => !["Завершён","Отменён"].includes(p.status));
+    // Матрица как в Qlik ПК: X = Итоговый балл (взвешенный 0–5),
+    // Y = Стратегическая важность (Низкая=1/Средняя=2/Высокая=3),
+    // размер пузыря = Сложность и Риски (1–3). Операционная деятельность исключена.
+    const active = allProjects.filter(p =>
+        !["Завершён","Отменён"].includes(p.status) &&
+        (p.processType || "") !== "Операционная деятельность");
     const canvas = document.getElementById("dashChartScoring");
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    active.forEach(p => {
-        const score = parseFloat(p.scoring) || 0;
-        const strategic = (p.strategicImportance || "").toLowerCase();
-        let sx = score * 80, sy = 0;
-        const yBase = 350;
-        if (strategic.includes("высок")) sy = 50;
-        else if (strategic.includes("сред")) sy = 175;
-        else if (strategic.includes("низк")) sy = 300;
-        else sy = 175;
-        sx = Math.max(30, Math.min(canvas.width - 20, sx + 40));
-        const rag = getPKStatus(p);
-        ctx.fillStyle = rag === "red" ? "#EF4444" : rag === "yellow" ? "#F59E0B" : "#10B981";
-        ctx.beginPath(); ctx.arc(sx, sy, 6, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = "#374151";
-        ctx.font = "8px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("#" + p.projectId, sx, sy - 10);
-    });
-    ctx.strokeStyle = "#E5E7EB";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4,4]);
-    ctx.beginPath(); ctx.moveTo(0, 112); ctx.lineTo(canvas.width, 112); ctx.stroke();
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    const level = s => {
+        const v = (s || "").toLowerCase();
+        return v.includes("высок") ? 3 : v.includes("сред") ? 2 : v.includes("низк") ? 1 : null;
+    };
+    const num = s => {
+        const v = parseFloat((s || "").replace(",", "."));
+        return isNaN(v) ? null : v;
+    };
+
+    const points = active.map(p => ({
+        id: p.projectId,
+        x: num(p.totalScore),
+        y: level(p.strategicImportance),
+        c: level(p.complexityRisk),
+        rag: getPKStatus(p),
+    })).filter(pt => pt.x !== null && pt.y !== null);
+
+    const L = 46, R = 14, T = 16, B = 34;
+    const plotW = W - L - R, plotH = H - T - B;
+    const xPos = v => L + (Math.max(0, Math.min(5, v)) / 5) * plotW;
+    const yPos = v => T + ((3 - v) / 2) * (plotH - 36) + 18;
+
+    // Сетка и шкала X (Итоговый балл 0–5)
+    ctx.strokeStyle = "#E5E7EB"; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+    ctx.fillStyle = "#6B7280"; ctx.font = "10px sans-serif"; ctx.textAlign = "center";
+    for (let i = 0; i <= 5; i++) {
+        const x = xPos(i);
+        ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, H - B); ctx.stroke();
+        ctx.fillText(String(i), x, H - B + 13);
+    }
     ctx.setLineDash([]);
-    ctx.fillStyle = "#6B7280";
-    ctx.font = "10px sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText("Высокая", 4, 40);
-    ctx.fillText("Средняя", 4, 165);
-    ctx.fillText("Низкая", 4, 290);
+    ctx.fillText("Итоговый балл", L + plotW / 2, H - 3);
+
+    // Подписи Y (Стратегическая важность)
+    ctx.textAlign = "left"; ctx.font = "9px sans-serif";
+    ctx.fillText("Высокая", 2, yPos(3) + 3);
+    ctx.fillText("Средняя", 2, yPos(2) + 3);
+    ctx.fillText("Низкая",  2, yPos(1) + 3);
+
+    if (points.length === 0) {
+        ctx.fillStyle = "#9CA3AF"; ctx.font = "13px sans-serif"; ctx.textAlign = "center";
+        ctx.fillText("Нет данных по скорингу", W / 2, H / 2);
+        return;
+    }
+
+    // Пузыри: радиус по Сложности и Риски, цвет по здоровью проекта
+    points.forEach(pt => {
+        const jx = (pt.id * 37) % 13 - 6;   // детерминированный джиттер против наложения
+        const jy = (pt.id * 53) % 9 - 4;
+        const x = xPos(pt.x) + jx;
+        const y = yPos(pt.y) + jy;
+        const r = 4 + ((pt.c || 2) - 1) * 2;   // Низкая=4, Средняя=6, Высокая=8
+        ctx.beginPath();
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = pt.rag === "red" ? "#EF4444" : pt.rag === "yellow" ? "#F59E0B" : "#10B981";
+        ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#374151"; ctx.font = "8px sans-serif"; ctx.textAlign = "center";
+        ctx.fillText("#" + pt.id, x, y - r - 3);
+    });
 }
 
 function dashGoPK(filter) {

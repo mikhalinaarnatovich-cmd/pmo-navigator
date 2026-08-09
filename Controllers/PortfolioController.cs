@@ -59,15 +59,15 @@ public class PortfolioController : ControllerBase
             decimal.TryParse(s?.Replace(',', '.'), System.Globalization.NumberStyles.Any,
                 System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : null;
 
-        // "Сложность и Риски" в исходных данных — текстовая категория (Низкая/Средняя/Высокая),
-        // а не число. Переводим на числовую шкалу 1-5, чтобы совпадать по масштабу
-        // со "Стратегическим соответствием" (тоже 1-5) и рисовать точки на графике.
-        decimal? ParseComplexity(string s) => s?.Trim() switch
+        // Матрица скоринга — как в Qlik ПК: X = Итоговый балл (взвешенный 0-5),
+        // Y = Стратегическая важность (Низкая=1/Средняя=2/Высокая=3),
+        // размер пузыря = Сложность и Риски (тоже 1-3).
+        decimal? ParseLevel(string s) => s?.Trim() switch
         {
-            "Низкая" => 1.5m,
-            "Средняя" => 3m,
-            "Высокая" => 4.5m,
-            _ => ParseScore(s),
+            "Низкая" => 1m,
+            "Средняя" => 2m,
+            "Высокая" => 3m,
+            _ => null,
         };
 
         var scoring = all
@@ -75,9 +75,9 @@ public class PortfolioController : ControllerBase
             {
                 projectId = p.ProjectId,
                 name = p.Name,
-                x = ParseComplexity(p.ComplexityRisk),
-                y = ParseScore(p.StrategicAlignment),
-                totalScore = ParseScore(p.TotalScore),
+                x = ParseScore(p.TotalScore),
+                y = ParseLevel(p.StrategicImportance),
+                size = ParseLevel(p.ComplexityRisk),
             })
             .Where(x => x.x != null && x.y != null)
             .ToList();
