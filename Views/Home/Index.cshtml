@@ -2345,63 +2345,6 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         <div class="pk-counter-value" id="cntDeadline">—</div>
       </div>
     </div>
-    <!-- Диаграммы -->
-    <!-- Карусель/вкладки для дашбордов ПК -->
-    <div class="pk-chart-tabs" style="display:flex;gap:0;margin-bottom:0;border-bottom:2px solid #E5E7EB;overflow-x:auto">
-      <button class="pk-chart-tab active" data-pkchart="health" onclick="pkChartSwitch('health')"
-              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid #2563EB;color:#2563EB;white-space:nowrap">
-        Здоровье портфеля</button>
-      <button class="pk-chart-tab" data-pkchart="type" onclick="pkChartSwitch('type')"
-              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#6B7280;white-space:nowrap">
-        По типам проектов</button>
-      <button class="pk-chart-tab" data-pkchart="dept" onclick="pkChartSwitch('dept')"
-              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#6B7280;white-space:nowrap">
-        По отделам</button>
-      <button class="pk-chart-tab" data-pkchart="scoring" onclick="pkChartSwitch('scoring')"
-              style="padding:10px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#6B7280;white-space:nowrap">
-        Скоринг (матрица)</button>
-    </div>
-
-    <div class="pk-charts-row" id="pkChartsRow">
-      <!-- Здоровье портфеля -->
-      <div class="pk-chart-pane" data-pane="health" style="display:flex;gap:24px;flex-wrap:wrap;padding:20px">
-        <div class="pk-chart-card" style="max-width:480px">
-          <div class="pk-chart-title">Здоровье портфеля</div>
-          <canvas id="chartHealth" width="200" height="200"></canvas>
-          <div class="pk-chart-legend" id="legendHealth"></div>
-        </div>
-        <div class="pk-chart-card" style="max-width:480px">
-          <div class="pk-chart-title">Статус проекта</div>
-          <canvas id="chartStatus" width="200" height="200"></canvas>
-          <div class="pk-chart-legend" id="legendStatus"></div>
-        </div>
-      </div>
-
-      <!-- По типам -->
-      <div class="pk-chart-pane" data-pane="type" style="display:none;padding:20px">
-        <div class="pk-chart-card">
-          <div class="pk-chart-title">Распределение по типам проектов</div>
-          <canvas id="chartProjectType" width="300" height="200"></canvas>
-          <div class="pk-chart-legend" id="legendProjectType"></div>
-        </div>
-      </div>
-
-      <!-- По отделам -->
-      <div class="pk-chart-pane" data-pane="dept" style="display:none;padding:20px">
-        <div class="pk-chart-card" style="width:100%">
-          <div class="pk-chart-title">Загрузка и здоровье по отделам</div>
-          <canvas id="chartByDept" width="600" height="450"></canvas>
-        </div>
-      </div>
-
-      <!-- Скоринг -->
-      <div class="pk-chart-pane" data-pane="scoring" style="display:none;padding:20px">
-        <div class="pk-chart-card" style="width:100%">
-          <div class="pk-chart-title">Матрица скоринга: Сложность/Риски × Стратегическое соответствие</div>
-          <canvas id="chartScoring" width="700" height="400"></canvas>
-        </div>
-      </div>
-    </div>
 
     <!-- Шапка -->
     <div class="pk-header-bar">
