@@ -20,6 +20,13 @@ public class ProjectsApiController : ControllerBase
         _user = user;
         _env = env;
         _projectsBasePath = config["ProjectsBasePath"] ?? @"W:\PMO";
+        // Тестовый режим: если сетевой диск недоступен (например, на Linux-хостинге),
+        // используем демо-документы из репозитория wwwroot/test-docs
+        if (!Directory.Exists(_projectsBasePath))
+        {
+            var local = Path.Combine(AppContext.BaseDirectory, "wwwroot", "test-docs");
+            if (Directory.Exists(local)) _projectsBasePath = local;
+        }
     }
 
     // GET /api/projects?status=Выполнение+и+контроль&search=авто

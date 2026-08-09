@@ -21,12 +21,23 @@ public class FileController : ControllerBase
     public FileController(IConfiguration config, ICurrentUserService user)
     {
         _projectsBasePath = config["ProjectsBasePath"] ?? @"W:\PMO";
+        // Тестовый режим: если сетевой диск недоступен (например, на Linux-хостинге),
+        // используем демо-документы из репозитория wwwroot/test-docs
+        if (!Directory.Exists(_projectsBasePath))
+        {
+            var local = Path.Combine(AppContext.BaseDirectory, "wwwroot", "test-docs");
+            if (Directory.Exists(local)) _projectsBasePath = local;
+        }
         _user = user;
     }
 
     private (bool ok, string fullPath) ResolvePath(string path)
     {
-        path = Uri.UnescapeDataString(path).Replace('/', '\\');
+        // Разделители — по ОС: на Windows '\', на Linux '/' (пути из API приходят с '/')
+        path = Uri.UnescapeDataString(path);
+        path = Path.DirectorySeparatorChar == '\\'
+            ? path.Replace('/', '\\')
+            : path.Replace('\\', '/');
 
         var fullBasePath = Path.GetFullPath(_projectsBasePath);
         var fullPath = Path.GetFullPath(path);
