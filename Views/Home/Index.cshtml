@@ -87,6 +87,19 @@ input,select{font-family:inherit}
 .dash-tip-row{display:flex;justify-content:space-between;gap:18px;color:#D1D5DB}
 .dash-tip-row b{color:#fff;font-weight:600}
 .dash-tip-dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:baseline}
+/* Фильтр проектов на матрице скоринга */
+.dash-scoring-filter{display:flex;align-items:center;gap:10px;margin:4px 0 8px}
+.dash-score-filter-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:70;background:#fff;
+  border:1px solid #E5E7EB;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);width:360px;padding:10px}
+.dash-score-filter-panel.open{display:block}
+.dash-score-filter-panel input[type=text]{width:100%;padding:6px 10px;border:1px solid #E5E7EB;border-radius:6px;font-size:12px;margin-bottom:8px}
+.dash-score-filter-list{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.dash-score-filter-list label{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 6px;border-radius:6px;cursor:pointer}
+.dash-score-filter-list label:hover{background:#F3F4F6}
+.dash-score-filter-list label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-score-filter-actions{display:flex;gap:8px;margin-top:8px}
+.dash-score-filter-actions button{flex:1;padding:5px 0;font-size:12px;border:1px solid #E5E7EB;border-radius:6px;background:#F9FAFB;cursor:pointer}
+.dash-score-filter-actions button:hover{background:#F3F4F6}
 @@keyframes spin{to{transform:rotate(360deg)}}
 
 /* Body */
@@ -2326,6 +2339,20 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
       <div class="pk-chart-pane" data-dpane="scoring">
         <div class="pk-chart-card" style="width:100%">
           <div class="pk-chart-title">Матрица скоринга: Итоговый балл × Стратегическая важность (размер пузыря — Сложность и Риски)</div>
+          <div class="dash-scoring-filter">
+            <div style="position:relative">
+              <button type="button" id="dashScoreFilterBtn" class="pk-filter" onclick="dashScoreFilterToggle()">Проекты: все ▾</button>
+              <div class="dash-score-filter-panel" id="dashScoreFilterPanel">
+                <input type="text" id="dashScoreFilterSearch" placeholder="Название или ID проекта..." oninput="dashScoreFilterRenderList()">
+                <div class="dash-score-filter-list" id="dashScoreFilterList"></div>
+                <div class="dash-score-filter-actions">
+                  <button type="button" onclick="dashScoreFilterAll(true)">Выбрать все</button>
+                  <button type="button" onclick="dashScoreFilterAll(false)">Сбросить</button>
+                </div>
+              </div>
+            </div>
+            <span id="dashScoreFilterInfo" style="font-size:11px;color:#6B7280"></span>
+          </div>
           <div class="dash-scoring-wrap">
             <canvas id="dashChartScoring" width="1100" height="520" style="display:block"></canvas>
             <div class="dash-scoring-tip" id="dashScoringTip"></div>
@@ -4004,7 +4031,8 @@ function dashRenderScoringChart() {
         y: level(p.strategicImportance),
         c: level(p.complexityRisk),
         rag: getPKStatus(p),
-    })).filter(pt => pt.x !== null && pt.y !== null);
+    })).filter(pt => pt.x !== null && pt.y !== null)
+      .filter(pt => dashScoreFilter.size === 0 || dashScoreFilter.has(pt.id));
     dashScoringPoints = points;
 
     const L = 64, R = 30, T = 20, B = 44;
@@ -4097,6 +4125,70 @@ function dashRenderScoringChart() {
         canvas.addEventListener("mouseleave", () => { tip.style.display = "none"; });
     }
 }
+
+// ── Фильтр проектов на матрице скоринга ─────────────────────────────────────
+let dashScoreFilter = new Set();   // выбранные projectId; пусто = показать все
+
+function dashScoreProjects() {
+    return allProjects.filter(p =>
+        !["Завершён","Отменён"].includes(p.status) &&
+        (p.processType || "") !== "Операционная деятельность" &&
+        parseFloat((p.totalScore || "").replace(",", ".")) &&
+        (p.strategicImportance || "").trim() !== "");
+}
+
+function dashScoreFilterToggle() {
+    const panel = document.getElementById("dashScoreFilterPanel");
+    if (!panel) return;
+    panel.classList.toggle("open");
+    if (panel.classList.contains("open")) {
+        dashScoreFilterRenderList();
+        const s = document.getElementById("dashScoreFilterSearch");
+        if (s) s.focus();
+    }
+}
+
+function dashScoreFilterRenderList() {
+    const listEl = document.getElementById("dashScoreFilterList");
+    if (!listEl) return;
+    const q = (document.getElementById("dashScoreFilterSearch").value || "").toLowerCase();
+    const list = dashScoreProjects().slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", "ru"));
+    const shown = list.filter(p => !q || (p.name || "").toLowerCase().includes(q) || String(p.projectId).includes(q));
+    listEl.innerHTML = shown.map(p =>
+        `<label title="#${p.projectId} ${esc(p.name || "")}">` +
+        `<input type="checkbox" ${dashScoreFilter.has(p.projectId) ? "checked" : ""} onchange="dashScoreFilterCheck(${p.projectId}, this.checked)">` +
+        `<span>#${p.projectId} ${esc(p.name || "")}</span></label>`
+    ).join("") || '<div style="font-size:12px;color:#9CA3AF;padding:6px">Ничего не найдено</div>';
+}
+
+function dashScoreFilterCheck(id, on) {
+    if (on) dashScoreFilter.add(id); else dashScoreFilter.delete(id);
+    dashScoreFilterUpdateBtn();
+    dashRenderScoringChart();
+}
+
+function dashScoreFilterAll(on) {
+    dashScoreFilter.clear();
+    if (on) dashScoreProjects().forEach(p => dashScoreFilter.add(p.projectId));
+    dashScoreFilterRenderList();
+    dashScoreFilterUpdateBtn();
+    dashRenderScoringChart();
+}
+
+function dashScoreFilterUpdateBtn() {
+    const n = dashScoreFilter.size;
+    const btn = document.getElementById("dashScoreFilterBtn");
+    const info = document.getElementById("dashScoreFilterInfo");
+    if (btn) btn.textContent = n ? `Проекты: выбрано ${n} ▾` : "Проекты: все ▾";
+    if (info) info.textContent = n ? "На графике только выбранные проекты" : "";
+}
+
+// Закрытие панели фильтра по клику вне её
+document.addEventListener("click", e => {
+    const panel = document.getElementById("dashScoreFilterPanel");
+    if (!panel || !panel.classList.contains("open")) return;
+    if (!e.target.closest(".dash-scoring-filter")) panel.classList.remove("open");
+});
 
 function dashGoPK(filter) {
     showPK();
