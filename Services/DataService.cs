@@ -144,6 +144,28 @@ public class DataService : IDataService
                 }
             }
 
+            // Дополнительно подхватываем участников из members.csv (ProjectId,Person,Role),
+            // если он есть: новые выгрузки хранят участников отдельно, чтобы не раздувать projects.csv
+            var membersFile = Path.Combine(_dataDir, "members.csv");
+            if (File.Exists(membersFile))
+            {
+                using var mReader = new StreamReader(membersFile, System.Text.Encoding.UTF8);
+                using var mCsv = new CsvReader(mReader, cfg);
+                mCsv.Read();
+                mCsv.ReadHeader();
+                while (mCsv.Read())
+                {
+                    var pidStr = mCsv.GetField("ProjectId") ?? "";
+                    if (!int.TryParse(pidStr, out var pid) || !dict.TryGetValue(pid, out var prj)) continue;
+                    var person = (mCsv.GetField("Person") ?? "").Trim();
+                    var role = (mCsv.GetField("Role") ?? "").Trim();
+                    if (person.Length == 0) continue;
+                    if (prj.Members.Any(m => m.Person == person && m.Role == role)) continue;
+                    prj.Members.Add(new Member { ProjectId = pid, Person = person, Role = role });
+                    totalMembers++;
+                }
+            }
+
             _projects = dict.Values.ToList();
             _lastLoaded = DateTime.Now;
             _log.LogInformation("Загружено {Count} проектов, {Mem} участников",
