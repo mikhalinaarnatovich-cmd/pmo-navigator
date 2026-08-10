@@ -100,8 +100,9 @@ public class EmployeesController : ControllerBase
             ManagerFullName = dto.ManagerFullName?.Trim(),
             Rate = dto.Rate <= 0 ? 1.00m : dto.Rate,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now,
+            // Kind=Unspecified: колонка timestamp (без tz), UTC/Local ломают Npgsql
         };
 
         _db.Employees.Add(entity);
@@ -123,7 +124,7 @@ public class EmployeesController : ControllerBase
         entity.Login = dto.Login?.Trim();
         entity.Rate = dto.Rate <= 0 ? entity.Rate : dto.Rate;
         entity.IsActive = dto.IsActive;
-        entity.UpdatedAt = DateTime.UtcNow;
+        entity.UpdatedAt = DateTime.Now;
 
         await _db.SaveChangesAsync();
         return Ok(entity);
@@ -191,7 +192,7 @@ public class EmployeesController : ControllerBase
                 entity.Sector = sector;
                 entity.ManagerFullName = manager;
                 entity.Rate = rate;
-                entity.UpdatedAt = DateTime.UtcNow;
+                entity.UpdatedAt = DateTime.Now;
                 updated++;
             }
         }

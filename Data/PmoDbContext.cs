@@ -84,7 +84,18 @@ public class PmoDbContext : DbContext
             entity.Property(x => x.Department).HasMaxLength(256);
             entity.Property(x => x.Sector).HasMaxLength(256);
             entity.Property(x => x.ManagerFullName).HasMaxLength(256);
-            entity.Property(x => x.Rate).HasPrecision(5, 2).HasDefaultValue(1.00m);
+            entity.Property(x => x.Rate).HasPrecision(5, 2);
+
+            // Колонки TIMESTAMP (без tz) — пишем DateTime как Unspecified,
+            // иначе Npgsql требует timestamptz из-за HasDefaultValue и падает на Kind=Local/UTC
+            entity.Property(x => x.CreatedAt)
+                .HasColumnType("timestamp")
+                .HasConversion(v => DateTime.SpecifyKind(v, DateTimeKind.Unspecified),
+                               v => v);
+            entity.Property(x => x.UpdatedAt)
+                .HasColumnType("timestamp")
+                .HasConversion(v => DateTime.SpecifyKind(v, DateTimeKind.Unspecified),
+                               v => v);
 
             entity.HasIndex(x => x.FullName).IsUnique();
         });

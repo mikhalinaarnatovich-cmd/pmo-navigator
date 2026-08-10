@@ -195,3 +195,13 @@ SELECT
 FROM dbo.ResourceAllocations ra
 LEFT JOIN dbo.Employees e ON e.FullName = ra.EmployeeName
 ORDER BY ra.PeriodStart, ra.EmployeeName;
+
+-- Приводим колонки дат к TIMESTAMP (без tz): EF Core пишет Unspecified,
+-- timestamptz ломал bulk-import сотрудников (Kind=Local/UTC)
+ALTER TABLE dbo.Employees ALTER COLUMN CreatedAt TYPE TIMESTAMP;
+ALTER TABLE dbo.Employees ALTER COLUMN UpdatedAt TYPE TIMESTAMP;
+ALTER TABLE dbo.ResourceAllocations ALTER COLUMN CreatedAt TYPE TIMESTAMP;
+ALTER TABLE dbo.ResourceAllocations ALTER COLUMN UpdatedAt TYPE TIMESTAMP;
+ALTER TABLE dbo.WorkCalendars ALTER COLUMN UpdatedAt TYPE TIMESTAMP;
+ALTER TABLE dbo.PeriodLocks ALTER COLUMN UpdatedAt TYPE TIMESTAMP;
+ALTER TABLE dbo.ResourceAllocationAudits ALTER COLUMN ChangedAt TYPE TIMESTAMP;
