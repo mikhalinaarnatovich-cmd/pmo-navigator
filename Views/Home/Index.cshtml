@@ -3043,75 +3043,106 @@ function renderGantt(p) {
     el.innerHTML = `<div class="gantt-wrap">${axisHtml}${rowsHtml}</div>${legendHtml}`;
 }
 
-// ════ ПОЛНОТА ДОКУМЕНТОВ ════════════════════════════════════════════════
-const DOC_REQUIREMENTS = [
-  {
-    folder: '1. Инициация',
-    required: [
-      'Запрос на инициацию проекта',
-      'Бизнес-инициатива',
-      'Бизнес-кейс Lite',
-      'Паспорт проекта (L1)',
-    ]
-  },
-  {
-    folder: '2. Планирование',
-    required: [
-      'Устав проекта',
-      'План управления проектом',
-      'План коммуникаций',
-      'Матрица RACI',
-      'Реестр рисков',
-    ]
-  },
-  {
-    folder: '3. Выполнение и Контроль',
-    required: [
-      'Отчёт о статусе проекта',
-      'Протокол совещания',
-      'Акт приёмки этапа',
-    ]
-  },
-  {
-    folder: '4. Завершение',
-    required: [
-      'Итоговый отчёт по проекту',
-      'Извлечённые уроки',
-      'Финальный акт приёмки',
-    ]
-  },
-  {
-    folder: 'Запрос на изменение',
-    required: [
-      'Формальный запрос на изменение',
-      'Протокол ПК с решением',
-    ]
-  },
+// ════ ПОЛНОТА ДОКУМЕНТОВ (по Регламенту УП, с привязкой к уровню L1/L2/L3) ════
+// Каждый документ: name — как показываем, match — ключевые слова для поиска в имени файла.
+// anyOf: документ засчитан, если найдено ХОТЯ БЫ одно совпадение из списка.
+const DOC_REQ_COMMON_PLANNING = [
+  { name: 'План управления проектом', anyOf: [['план', 'управлен'], ['план', 'проект']] },
+  { name: 'План коммуникаций', anyOf: [['коммуникац']] },
+  { name: 'Матрица RACI', anyOf: [['raci'], ['матриц']] },
+  { name: 'Реестр рисков', anyOf: [['риск'], ['реестр', 'риск']] },
+  { name: 'Реестр заинтересованных сторон', anyOf: [['заинтересован'], ['стейкхолдер'], ['stakeholder']] },
 ];
+
+function docRequirementsFor(projectType) {
+    const t = (projectType || '').toLowerCase();
+    const isL1 = t.includes('l1');
+    const isL3 = t.includes('l3');
+    const statusReport = isL3
+        ? { name: 'Отчёт о статусе проекта (L3, расширенный)', anyOf: [['отчет', 'статус'], ['отчёт', 'статус'], ['статус-отчёт'], ['статус']] }
+        : { name: 'Отчёт о статусе проекта', anyOf: [['отчет', 'статус'], ['отчёт', 'статус'], ['статус-отчёт'], ['статус']] };
+    return [
+      {
+        folder: '1. Инициация',
+        required: isL1
+          ? [
+              { name: 'Запрос на инициацию проекта', anyOf: [['запрос', 'инициац'], ['pir']] },
+              // Паспорт объединяет Бизнес-инициативу и Устав (Регламент)
+              { name: 'Паспорт проекта (заменяет Бизнес-инициативу и Устав)', anyOf: [['паспорт']] },
+            ]
+          : [
+              { name: 'Запрос на инициацию проекта', anyOf: [['запрос', 'инициац'], ['pir']] },
+              { name: 'Бизнес-инициатива', anyOf: [['бизнес-инициатив'], ['бизнес', 'инициатив'], ['инициатив']] },
+            ],
+      },
+      {
+        folder: '2. Планирование',
+        required: (isL1
+          ? [{ name: 'Паспорт проекта (дополняется)', anyOf: [['паспорт']] }]
+          : [{ name: 'Устав проекта', anyOf: [['устав'], ['charter']] }]
+        ).concat(DOC_REQ_COMMON_PLANNING),
+      },
+      {
+        folder: '3. Исполнение и Контроль',
+        altFolders: ['3. Выполнение и Контроль'],
+        required: [
+          statusReport,
+          { name: 'Протокол встречи', anyOf: [['протокол']] },
+          { name: 'Запрос на изменение', anyOf: [['запрос', 'изменен'], ['запрос на изменение']] },
+          { name: 'Акт приёмки этапа', anyOf: [['акт', 'приёмк'], ['акт', 'приемк'], ['акт']] },
+        ],
+      },
+      {
+        folder: '4. Завершение',
+        required: [
+          { name: 'Акт приёмки этапа', anyOf: [['акт', 'приёмк'], ['акт', 'приемк'], ['акт']] },
+          { name: 'Итоговый отчёт по проекту', anyOf: [['итогов'], ['closure']] },
+          { name: 'Уроки, извлечённые из проекта', anyOf: [['урок'], ['lessons']] },
+        ],
+      },
+      {
+        folder: 'Сквозные (Реестры)',
+        anyFolder: true,   // реестры могут лежать в любой папке
+        required: [
+          { name: 'Реестры (Logs).xlsx', anyOf: [['реестр'], ['logs'], ['log']] },
+        ],
+      },
+    ];
+}
 
 function renderCompleteness(p) {
     const el = document.getElementById('completenessList');
-    const existingFolders = (p.folders || []).map(f => (f.name || '').toLowerCase());
-    const getFiles = (folderName) => {
-        const f = (p.folders || []).find(f => f.name === folderName);
-        return f ? (f.files || []).map(fi => fi.name.toLowerCase()) : [];
-    };
+    const folders = p.folders || [];
+    const requirements = docRequirementsFor(p.projectType);
 
-    // Проверяем наличие папок
+    // Файлы папки с учётом альтернативных имён («3. Исполнение и Контроль» == «3. Выполнение и Контроль»)
+    const getFiles = (req) => {
+        if (req.anyFolder) return folders.flatMap(f => (f.files || []).map(fi => fi.name.toLowerCase()));
+        const names = [req.folder, ...(req.altFolders || [])];
+        const folder = folders.find(f => names.some(n => (f.name || '').toLowerCase() === n.toLowerCase()));
+        return folder ? (folder.files || []).map(fi => fi.name.toLowerCase()) : [];
+    };
+    const folderExists = (req) => {
+        if (req.anyFolder) return folders.length > 0;
+        const names = [req.folder, ...(req.altFolders || [])].map(n => n.toLowerCase());
+        return folders.some(f => names.includes((f.name || '').toLowerCase()));
+    };
+    const docFound = (doc, files) =>
+        doc.anyOf.some(group => group.every(kw => files.some(fn => fn.includes(kw))));
+
+    const typeLabel = (p.projectType || '').match(/L\d/)?.[0] || '';
+
     let totalRequired = 0, totalPresent = 0;
-    const sectionsHtml = DOC_REQUIREMENTS.map(req => {
-        const folderExists = existingFolders.some(fn =>
-            fn.includes(req.folder.toLowerCase()) || req.folder.toLowerCase().includes(fn.split('.')[fn.split('.').length-1]?.trim() || ''));
-        const files = getFiles(req.folder);
-        const itemsHtml = req.required.map(docName => {
-            // Проверяем частичное совпадение по ключевым словам
-            const keyword = docName.split(' ').filter(w => w.length > 3)[0]?.toLowerCase() || docName.toLowerCase();
-            const found = files.some(fn => fn.includes(keyword));
+    const sectionsHtml = requirements.map(req => {
+        const files = getFiles(req);
+        const exists = folderExists(req);
+        const itemsHtml = req.required.map(doc => {
+            const found = docFound(doc, files);
             totalRequired++;
             if (found) totalPresent++;
             return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #F3F4F6">
               <span style="font-size:14px;flex-shrink:0">${found ? '✅' : '❌'}</span>
-              <span style="font-size:12px;color:${found ? '#374151' : '#DC2626'}">${docName}</span>
+              <span style="font-size:12px;color:${found ? '#374151' : '#DC2626'}">${doc.name}</span>
             </div>`;
         }).join('');
         const cnt = files.length;
@@ -3119,7 +3150,7 @@ function renderCompleteness(p) {
         const folderBorder = cnt > 0 ? '#FDE68A' : '#FECACA';
         return `<div style="margin-bottom:10px;border:1px solid ${folderBorder};border-radius:10px;overflow:hidden">
           <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:${folderColor}">
-            <span style="font-size:15px">${folderExists || cnt > 0 ? '📁' : '📂'}</span>
+            <span style="font-size:15px">${exists || cnt > 0 ? '📁' : '📂'}</span>
             <span style="font-size:13px;font-weight:600;color:#374151;flex:1">${req.folder}</span>
             <span style="font-size:11px;padding:1px 8px;border-radius:10px;font-weight:600;
               background:${cnt > 0 ? '#DBEAFE' : '#FEE2E2'};color:${cnt > 0 ? '#1D4ED8' : '#DC2626'}">${cnt} файл</span>
@@ -3133,13 +3164,13 @@ function renderCompleteness(p) {
     const summaryHtml = `<div style="margin-bottom:12px;padding:10px 14px;background:#F9FAFB;
       border:1px solid #E5E7EB;border-radius:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:12px;font-weight:600;color:#374151">Полнота документации</span>
+        <span style="font-size:12px;font-weight:600;color:#374151">Полнота документации${typeLabel ? ' · ' + typeLabel : ''}</span>
         <span style="font-size:13px;font-weight:700;color:${barColor}">${pct}%</span>
       </div>
       <div style="height:6px;background:#E5E7EB;border-radius:3px;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .4s"></div>
       </div>
-      <div style="font-size:11px;color:#9CA3AF;margin-top:4px">${totalPresent} из ${totalRequired} обязательных документов найдено</div>
+      <div style="font-size:11px;color:#9CA3AF;margin-top:4px">${totalPresent} из ${totalRequired} обязательных документов найдено${typeLabel ? ` (требования уровня ${typeLabel})` : ''}</div>
     </div>`;
 
     el.innerHTML = summaryHtml + sectionsHtml;
