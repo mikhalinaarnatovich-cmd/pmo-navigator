@@ -27,6 +27,10 @@ COPY --from=build /app/publish ./
 COPY --from=build /src/Database/ ./Database/
 COPY --from=build /src/wwwroot/ ./wwwroot/
 
+# Тестовые документы проектов — копируем напрямую в обход dotnet publish
+# (в именах файлов есть ';' и скобки, MSBuild на них падает с Conflicting assets)
+COPY ProjectDocs ./wwwroot/test-docs
+
 # Render передаёт строку подключения через переменную окружения
 # ConnectionStrings__PmoNavigatorDb
 # Авто-миграция выполнится при старте (см. Program.cs)
