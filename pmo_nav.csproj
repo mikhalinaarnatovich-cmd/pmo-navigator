@@ -5,6 +5,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>PmoNav</RootNamespace>
+    <!-- Тестовые документы в wwwroot/test-docs копируются через Content (см. ниже). -->
+    <!-- Без этого dotnet publish падает: Conflicting assets with the same target path 'test-docs/...' -->
+    <EnableDefaultStaticWebAssets>false</EnableDefaultStaticWebAssets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,6 +36,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="wwwroot/data/**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="wwwroot/test-docs/**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
