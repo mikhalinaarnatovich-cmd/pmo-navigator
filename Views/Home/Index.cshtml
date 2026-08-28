@@ -2592,6 +2592,8 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
 const BASE = window.location.pathname.startsWith('/pmo') ? '/pmo' : '';
 // ════ СОСТОЯНИЕ ═════════════════════════════════════════════════════════════
 let currentStatus = 'Все';
+// Виртуальный «все» = все кроме Завершён и Отменён
+const EXCLUDED_FROM_ALL = ['Завершён', 'Отменён'];
 let currentSearch = '';
 let selectedId    = null;
 let allProjects   = [];
