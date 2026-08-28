@@ -1722,6 +1722,13 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         onclick="resourceOpen()">
     Ресурсный план
 </button>
+  <!-- Портфель — главный экран с таблицей и папками-статусами -->
+  <button class="header-portfolio" id="btnMain" title="Таблица проектов с папками-статусами">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+    </svg>
+    Портфель
+  </button>
   <!-- Ганта портфеля -->
   <button class="header-portfolio" id="btnPortfolio" title="Диаграмма Ганта по всем проектам портфеля">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -2613,6 +2620,9 @@ let sortAsc   = true;
 // ════ ИНИЦИАЛИЗАЦИЯ ══════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
     animateProgress(0, 30, 400);
+    // При первой загрузке показан главный экран (Портфель) — подсвечиваем кнопку.
+    const btnMainInit = document.getElementById('btnMain');
+    if (btnMainInit) btnMainInit.classList.add('active');
     await loadProjects();
     animateProgress(30, 100, 300);
     setTimeout(() => {
@@ -3221,8 +3231,14 @@ function renderCompleteness(p) {
 }
 
 // ════ ПОРТФЕЛЬ — НАВИГАЦИЯ ════════════════════════════════════════════════════
+function _clearMainActive() {
+    const btnMain = document.getElementById('btnMain');
+    if (btnMain) btnMain.classList.remove('active');
+}
+
 function showPortfolio() {
     resourceShowMain();
+    _clearMainActive();
     portfolioViewActive = true;
     pkViewActive = false;
     crViewActive = false;
@@ -3242,6 +3258,7 @@ function showPortfolio() {
 
 function showPK() {
     resourceShowMain();
+    _clearMainActive();
     pkViewActive = true;
     portfolioViewActive = false;
     crViewActive = false;
@@ -3263,6 +3280,7 @@ function showPK() {
 
 function showCR() {
     resourceShowMain();
+    _clearMainActive();
     crViewActive = true;
     pkViewActive = false;
     portfolioViewActive = false;
@@ -3297,10 +3315,14 @@ function showMain() {
     document.getElementById('btnCR').classList.remove('active');
     document.getElementById('btnDashboard').classList.remove('active');
     document.getElementById('dashboardView').classList.remove('active');
+    // Подсвечиваем кнопку «Портфель» в шапке — главный экран активен.
+    const btnMain = document.getElementById('btnMain');
+    if (btnMain) btnMain.classList.add('active');
 }
 
 function showDashboard() {
     resourceShowMain();
+    _clearMainActive();
     dashboardViewActive = true;
     portfolioViewActive = false;
     pkViewActive = false;
@@ -3323,6 +3345,11 @@ function showDashboard() {
 document.getElementById('btnDashboard').addEventListener('click', () => {
     if (dashboardViewActive) showMain();
     else showDashboard();
+});
+
+// Кнопка Портфель в шапке: возврат на главный экран с таблицей и папками-статусами.
+document.getElementById('btnMain').addEventListener('click', () => {
+    showMain();
 });
 
 // Кнопка Портфель: переключение
