@@ -19,7 +19,7 @@ public class ProjectsApiController : ControllerBase
         _data = data;
         _user = user;
         _env = env;
-        _projectsBasePath = config["ProjectsBasePath"] ?? @"W:\PMO";
+        _projectsBasePath = config["ProjectsBasePath"] ?? @"Z:\Документы\Common\РМО";
         // Тестовый режим: если сетевой диск недоступен (например, на Linux-хостинге),
         // используем демо-документы из репозитория wwwroot/test-docs
         if (!Directory.Exists(_projectsBasePath))
