@@ -463,6 +463,37 @@ input,select{font-family:inherit}
 /* ═══ ЗАПРОСЫ НА ИЗМЕНЕНИЕ ══════════════════════════════════════════════════ */
 .cr-view{flex:1;display:none;flex-direction:column;overflow:hidden;background:#F4F5F7}
 .cr-view.active{display:flex}
+/* Контроль документов */
+.doc-view{flex:1;display:none;flex-direction:column;overflow-y:auto;background:#F4F5F7}
+.doc-view.active{display:flex}
+.doc-header-bar{padding:16px 20px;background:#fff;border-bottom:1px solid #E5E7EB;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.doc-header-title{font-size:16px;font-weight:700;color:#111827}
+.doc-header-sub{font-size:12px;color:#6B7280;margin-top:2px}
+.doc-refresh-btn{padding:6px 14px;background:#D97706;color:#fff;border:none;
+  border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+.doc-refresh-btn:hover{background:#B45309}
+.doc-refresh-btn:disabled{background:#9CA3AF;cursor:wait}
+.doc-sections{padding:16px 20px;display:flex;flex-direction:column;gap:16px}
+.doc-section{background:#fff;border:1px solid #E5E7EB;border-radius:12px;overflow:hidden}
+.doc-section-head{padding:14px 18px;background:#FFFBEB;border-bottom:1px solid #FDE68A;
+  display:flex;align-items:center;gap:10px}
+.doc-section-head.ok{background:#F0FDF4;border-bottom-color:#BBF7D0}
+.doc-section-title{font-size:14px;font-weight:700;color:#111827;flex:1}
+.doc-section-sub{font-size:11px;color:#6B7280;margin-top:2px;font-weight:400}
+.doc-section-cnt{font-size:12px;font-weight:700;padding:3px 12px;border-radius:999px;
+  background:#FEF3C7;color:#92400E}
+.doc-section-cnt.ok{background:#D1FAE5;color:#065F46}
+.doc-section-body{padding:0}
+.doc-table{width:100%;border-collapse:collapse;font-size:13px}
+.doc-table th{position:sticky;top:0;background:#F9FAFB;padding:9px 14px;
+  text-align:left;font-size:11px;font-weight:600;color:#6B7280;
+  text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid #E5E7EB}
+.doc-table td{padding:10px 14px;border-bottom:1px solid #F3F4F6;vertical-align:middle}
+.doc-table tr:hover td{background:#FEF3C7;cursor:pointer}
+.doc-table tr:last-child td{border-bottom:none}
+.doc-empty-msg{padding:22px;text-align:center;color:#9CA3AF;font-size:13px}
+.doc-loading{padding:40px;text-align:center;color:#6B7280;font-size:13px}
 .cr-header-bar{padding:12px 20px;background:#fff;border-bottom:1px solid #E5E7EB;
   display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap}
 .cr-header-title{font-size:14px;font-weight:700;color:#111827}
