@@ -2452,19 +2452,21 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
       <div class="detail-section">
         <div class="detail-grid">
           <div class="detail-field"><label>Статус</label><span id="dStatus"></span></div>
-          <div class="detail-field"><label>Приоритет</label><span id="dPriority"></span></div>
+          <div class="detail-field"><label>Индикатор здоровья</label><span id="dHealth"></span></div>
           <div class="detail-field"><label>Заказчик</label><span id="dCustomer"></span></div>
           <div class="detail-field"><label>Рук. проекта</label><span id="dPM"></span></div>
           <div class="detail-field"><label>Плановое начало</label><span id="dPlanStart"></span></div>
           <div class="detail-field"><label>Плановое окончание</label><span id="dPlanEnd"></span></div>
           <div class="detail-field"><label>Факт. начало</label><span id="dFactStart"></span></div>
           <div class="detail-field"><label>Факт. окончание</label><span id="dFactEnd"></span></div>
+          <div class="detail-field"><label>Дата дедлайна</label><span id="dDeadlineDate"></span></div>
+          <div class="detail-field"><label>Жёсткий дедлайн</label><span id="dHardDeadline"></span></div>
           <div class="detail-field"><label>Отдел</label><span id="dDept"></span></div>
           <div class="detail-field"><label>Тип</label><span id="dType"></span></div>
           <div class="detail-field"><label>Куратор</label><span id="dCurator"></span></div>
           <div class="detail-field"><label>Стратег. важность</label><span id="dStrategic"></span></div>
+          <div class="detail-field"><label>Сложность / риск</label><span id="dComplexity"></span></div>
           <div class="detail-field"><label>Скоринг (балл)</label><span id="dScore"></span></div>
-          <div class="detail-field"><label>Жёсткий дедлайн</label><span id="dHardDeadline"></span></div>
         </div>
       </div>
       <div class="detail-section" id="dGoalSection">
@@ -2472,26 +2474,25 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         <div class="detail-goal" id="dGoal"></div>
       </div>
       <div class="detail-tabs">
-        <button class="dtab active" data-tab="members">Команда</button>
-        <button class="dtab" data-tab="docs">Документы</button>
+        <button class="dtab active" data-tab="docs">Документы</button>
         <button class="dtab" data-tab="completeness">Полнота</button>
-        <button class="dtab" data-tab="gantt">Ганта</button>
         <button class="dtab" data-tab="links">Ссылки</button>
       </div>
-      <div class="dtab-content active" id="tab-members">
-        <div id="membersList"></div>
-      </div>
-      <div class="dtab-content" id="tab-docs">
+      <div class="dtab-content active" id="tab-docs">
         <div id="docsList"></div>
       </div>
       <div class="dtab-content" id="tab-completeness">
         <div id="completenessList"></div>
       </div>
-      <div class="dtab-content" id="tab-gantt">
-        <div id="ganttChart"></div>
-      </div>
       <div class="dtab-content" id="tab-links">
         <div id="linksList"></div>
+      </div>
+      <!-- Скрытые вкладки: Команда (роли в SD некорректны), Ганта (нет источника дат этапов) -->
+      <div class="dtab-content" id="tab-members" style="display:none">
+        <div id="membersList"></div>
+      </div>
+      <div class="dtab-content" id="tab-gantt" style="display:none">
+        <div id="ganttChart"></div>
       </div>
     </div>
   </aside>
@@ -2869,8 +2870,8 @@ async function loadDetail(id) {
     if (pkViewActive) showMain();
     renderTable();
 
-    document.querySelectorAll('.dtab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'members'));
-    document.querySelectorAll('.dtab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-members'));
+    document.querySelectorAll('.dtab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'docs'));
+    document.querySelectorAll('.dtab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-docs'));
     document.getElementById('detailPanel').classList.add('open');
 
     try {
@@ -2880,7 +2881,7 @@ async function loadDetail(id) {
         document.getElementById('dId').textContent       = `Проект № ${p.projectId}`;
         document.getElementById('dName').textContent     = p.name;
         document.getElementById('dStatus').innerHTML     = statusBadge(p.status);
-        document.getElementById('dPriority').innerHTML   = priorityHtml(p.priority);
+        document.getElementById('dHealth').innerHTML     = healthBadge(p.healthStatus);
         document.getElementById('dCustomer').textContent = p.customer || '—';
         document.getElementById('dPM').textContent       = p.projectManager || '—';
         document.getElementById('dPlanStart').textContent= fmtDate(p.planStart);
@@ -2888,9 +2889,11 @@ async function loadDetail(id) {
         document.getElementById('dFactStart').textContent= fmtDate(p.factStart);
         document.getElementById('dFactEnd').textContent  = fmtDate(p.factEnd);
         document.getElementById('dDept').textContent     = p.department || '—';
-        document.getElementById('dType').textContent     = p.typeProject || '—';
+        document.getElementById('dType').textContent     = p.projectType || '—';
         document.getElementById('dCurator').textContent      = p.curator || '—';
         document.getElementById('dStrategic').textContent    = p.strategicImportance || '—';
+        document.getElementById('dComplexity').textContent   = p.complexityRisk || '—';
+        document.getElementById('dDeadlineDate').textContent = fmtDate(p.deadlineDate);
         const scoreVal = parseFloat(p.totalScore);
         if (!isNaN(scoreVal)) {
             const scoreCls = scoreVal >= 3 ? 'score-high' : scoreVal >= 2 ? 'score-mid' : 'score-low';
@@ -2898,9 +2901,8 @@ async function loadDetail(id) {
         } else {
             document.getElementById('dScore').textContent = '—';
         }
-        document.getElementById('dHardDeadline').textContent = p.hardDeadline && p.hardDeadline !== '-'
-            ? (p.hardDeadline + (p.deadlineDate && p.deadlineDate !== '-' ? ' — ' + fmtDate(p.deadlineDate) : ''))
-            : '—';
+        document.getElementById('dHardDeadline').textContent =
+            p.hardDeadline && p.hardDeadline !== '-' ? p.hardDeadline : '—';
 
         const goal = (p.goal || '').trim();
         document.getElementById('dGoalSection').style.display = goal ? '' : 'none';
@@ -4531,6 +4533,20 @@ const PRIO_CLASSES = {
 function priorityHtml(p) {
     if (!p || p === '-') return '<span style="color:#D1D5DB">—</span>';
     return `<span class="${PRIO_CLASSES[p]||'prio-3'}">${esc(p)}</span>`;
+}
+
+// Индикатор здоровья проекта — цветной круг + текст.
+function healthBadge(h) {
+    if (!h || h === '-') return '<span style="color:#D1D5DB">—</span>';
+    const t = h.toLowerCase();
+    let color = '#9CA3AF';
+    if (t.includes('зел') || t.includes('green') || t.includes('норм')) color = '#10B981';
+    else if (t.includes('желт') || t.includes('yellow') || t.includes('риск')) color = '#F59E0B';
+    else if (t.includes('крас') || t.includes('red') || t.includes('вмешат')) color = '#EF4444';
+    return `<span style="display:inline-flex;align-items:center;gap:6px">
+              <span style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block"></span>
+              <span>${esc(h)}</span>
+            </span>`;
 }
 
 function initials(name) {

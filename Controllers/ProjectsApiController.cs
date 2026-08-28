@@ -131,6 +131,7 @@ public class ProjectsApiController : ControllerBase
             p.HealthStatus,
             p.StrategicImportance,
             p.TotalScore,
+            p.ComplexityRisk,
             p.HardDeadline,
             p.DeadlineDate,
             members = p.Members.Select(m => new { m.Person, m.Role }),
