@@ -2628,6 +2628,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearTimeout(searchTimer);
         searchTimer = setTimeout(() => {
             currentSearch = e.target.value.trim();
+            buildStatusCounts();
+            renderSidebar();
             renderTable();
         }, 200);
     });
@@ -2707,10 +2709,35 @@ async function reloadData() {
 
 // ════ СЧЁТЧИКИ СТАТУСОВ ══════════════════════════════════════════════════════
 function buildStatusCounts() {
-    statusCounts = { 'Все': allProjects.length };
-    for (const p of allProjects) {
+    // Счётчики в боковой панели учитывают активные фильтры таблицы и поиск
+    // (кроме самого статуса) — клик по папке ведётся поверх выбранных фильтров аддитивно.
+    const base = projectsAfterNonStatusFilters();
+    // «Все» — все кроме Завершён и Отменён
+    const allActive = base.filter(p => !EXCLUDED_FROM_ALL.includes(p.status));
+    statusCounts = { 'Все': allActive.length };
+    for (const p of base) {
         statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
     }
+}
+
+function projectsAfterNonStatusFilters() {
+    let list = allProjects;
+    if (tbFilters.dept)     list = list.filter(p => p.department     === tbFilters.dept);
+    if (tbFilters.priority) list = list.filter(p => p.priority       === tbFilters.priority);
+    if (tbFilters.pm)       list = list.filter(p => p.projectManager === tbFilters.pm);
+    if (tbFilters.customer) list = list.filter(p => p.customer       === tbFilters.customer);
+    if (tbFilters.curator)  list = list.filter(p => p.curator        === tbFilters.curator);
+    if (currentSearch) {
+        const q = currentSearch.toLowerCase();
+        list = list.filter(p =>
+            p.name.toLowerCase().includes(q) ||
+            String(p.projectId).includes(q) ||
+            (p.customer || '').toLowerCase().includes(q) ||
+            (p.projectManager || '').toLowerCase().includes(q) ||
+            (p.department || '').toLowerCase().includes(q)
+        );
+    }
+    return list;
 }
 
 // ════ SIDEBAR ════════════════════════════════════════════════════════════════
@@ -2750,7 +2777,11 @@ function renderSidebar() {
 // ════ ТАБЛИЦА ════════════════════════════════════════════════════════════════
 function filtered() {
     let list = allProjects;
-    if (currentStatus !== 'Все') list = list.filter(p => p.status === currentStatus);
+    if (currentStatus === 'Все') {
+        list = list.filter(p => !EXCLUDED_FROM_ALL.includes(p.status));
+    } else {
+        list = list.filter(p => p.status === currentStatus);
+    }
     if (tbFilters.dept)     list = list.filter(p => p.department     === tbFilters.dept);
     if (tbFilters.priority) list = list.filter(p => p.priority       === tbFilters.priority);
     if (tbFilters.pm)       list = list.filter(p => p.projectManager === tbFilters.pm);
@@ -3319,6 +3350,9 @@ function applyToolbarFilters() {
     tbFilters.pm       = document.getElementById('tbPM').value;
     tbFilters.customer = document.getElementById('tbCustomer').value;
     tbFilters.curator  = document.getElementById('tbCurator').value;
+    // Пересчитываем счётчики папок статусов с учётом новых фильтров
+    buildStatusCounts();
+    renderSidebar();
     renderTable();
 }
 
