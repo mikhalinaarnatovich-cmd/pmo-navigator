@@ -513,9 +513,9 @@ input,select{font-family:inherit}
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;
   display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .modal-backdrop.hidden{display:none}
-.modal-box{background:#fff;border-radius:12px;width:560px;max-width:96vw;
-  max-height:88vh;display:flex;flex-direction:column;overflow:hidden;
-  box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-box{background:#fff;border-radius:14px;width:820px;max-width:96vw;
+  max-height:90vh;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 25px 70px rgba(0,0,0,.28)}
 .modal-head{padding:20px 24px 16px;border-bottom:1px solid #E5E7EB;
   display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .modal-head-title{font-size:17px;font-weight:700;color:#111827}
@@ -530,14 +530,53 @@ input,select{font-family:inherit}
   padding:8px 22px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
 .modal-foot button:hover{background:#1D4ED8}
 
-.help-section{margin-bottom:18px}
-.help-section-title{font-size:13px;font-weight:700;color:#1D4ED8;margin-bottom:7px}
+/* === СПРАВКА === */
+.help-hero{background:linear-gradient(135deg,#EEF2FF 0%,#F0F9FF 100%);
+  border:1px solid #E0E7FF;border-radius:12px;padding:16px 18px;margin-bottom:22px;
+  display:flex;gap:14px;align-items:flex-start}
+.help-hero-icon{width:40px;height:40px;border-radius:10px;background:#4F46E5;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+.help-hero-title{font-size:15px;font-weight:700;color:#111827;margin-bottom:4px}
+.help-hero-sub{font-size:13px;color:#4B5563;line-height:1.55}
+.help-toc{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:22px;
+  padding-bottom:18px;border-bottom:1px solid #E5E7EB}
+.help-toc a{font-size:12px;font-weight:600;color:#4F46E5;background:#EEF2FF;
+  border:1px solid #E0E7FF;border-radius:999px;padding:5px 12px;
+  text-decoration:none;cursor:pointer;transition:background .15s,border-color .15s}
+.help-toc a:hover{background:#E0E7FF;border-color:#C7D2FE}
+.help-section{margin-bottom:26px;scroll-margin-top:12px}
+.help-section-title{font-size:15px;font-weight:700;color:#111827;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:2px solid #EEF2FF}
+.help-section-title::before{content:'';width:4px;height:16px;background:#4F46E5;border-radius:2px}
 .help-section p,.help-section li{font-size:13px;color:#374151;line-height:1.65}
-.help-section ul{padding-left:18px;display:flex;flex-direction:column;gap:4px}
-.help-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
-.help-table td{padding:5px 8px;border-bottom:1px solid #F3F4F6;vertical-align:top}
+.help-section ul{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:0}
+.help-section ul li b{color:#111827}
+.help-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:10px;margin-top:8px}
+.help-card{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;
+  padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.help-card-title{font-size:12px;font-weight:700;color:#111827;
+  display:flex;align-items:center;gap:6px}
+.help-card-body{font-size:12px;color:#4B5563;line-height:1.55}
+.help-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;padding:2px 7px;border-radius:5px;background:#EEF2FF;color:#4F46E5}
+.help-tag.tag-portfolio{background:#DBEAFE;color:#1D4ED8}
+.help-tag.tag-gantt{background:#E9D5FF;color:#6B21A8}
+.help-tag.tag-pk{background:#DCFCE7;color:#166534}
+.help-tag.tag-dash{background:#FEF3C7;color:#92400E}
+.help-tag.tag-res{background:#DBEAFE;color:#1E40AF}
+.help-tag.tag-cr{background:#D1FAE5;color:#065F46}
+.help-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;
+  border:1px solid #E5E7EB;border-radius:8px;overflow:hidden}
+.help-table td{padding:8px 12px;border-bottom:1px solid #F3F4F6;vertical-align:top}
+.help-table tr:last-child td{border-bottom:none}
 .help-table tr:nth-child(odd) td{background:#F9FAFB}
-.help-table td:first-child{font-weight:600;white-space:nowrap;color:#111827;width:160px}
+.help-table td:first-child{font-weight:600;white-space:nowrap;color:#111827;width:200px}
+.help-tip{background:#FFFBEB;border-left:3px solid #F59E0B;padding:10px 14px;
+  border-radius:6px;margin-top:10px;font-size:12px;color:#78350F;line-height:1.6}
+.help-tip::before{content:'💡 ';font-size:14px}
+.help-status-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px}
+.help-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#374151}
 
 /* ═══ SCROLLBAR ═════════════════════════════════════════════════════════════ */
@@ -2522,75 +2561,197 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
     </div>
     <div class="modal-body">
 
-      <div class="help-section">
-        <div class="help-section-title">Что это такое</div>
-        <p>Навигатор по портфелю проектов PMO. Позволяет быстро найти нужный проект,
-        увидеть его статус, команду, сроки и документы — без входа в Service Desk
-        и без лицензии Qlik. Данные автоматически загружаются из CSV-выгрузки.</p>
+      <!-- Геро-блок -->
+      <div class="help-hero">
+        <div class="help-hero-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="help-hero-title">Ваш пульт управления портфелем проектов PMO</div>
+          <div class="help-hero-sub">Найти проект, увидеть статус, заглянуть в документы и спланировать ресурсы
+            — всё в одном месте, без входа в Service Desk и без лицензии Qlik.</div>
+        </div>
       </div>
 
+      <!-- Содержание -->
+      <div class="help-toc">
+        <a href="#h-portfolio">Портфель</a>
+        <a href="#h-gantt">Ганта портфеля</a>
+        <a href="#h-pk">ПК</a>
+        <a href="#h-dashboard">Дашборд</a>
+        <a href="#h-cr">Запросы на изменение</a>
+        <a href="#h-resource">Ресурсный план</a>
+        <a href="#h-card">Карточка проекта</a>
+        <a href="#h-statuses">Статусы</a>
+        <a href="#h-completeness">Полнота документации</a>
+        <a href="#h-data">Данные</a>
+      </div>
+
+      <!-- Навигация — карточки вкладок -->
       <div class="help-section">
-        <div class="help-section-title">Список проектов</div>
+        <div class="help-section-title">Вкладки в шапке</div>
+        <p style="margin-bottom:8px;color:#4B5563">Шесть основных вкладок — каждая открывает свой режим работы.</p>
+        <div class="help-cards">
+          <div class="help-card">
+            <div class="help-card-title"><span class="help-tag tag-portfolio">Портфель</span></div>
+            <div class="help-card-body">Главный экран: таблица всех проектов + папки-статусы слева.</div>
+          </div>
+          <div class="help-card">
+            <div class="help-card-title"><span class="help-tag tag-gantt">Ганта портфеля</span></div>
+            <div class="help-card-body">Диаграмма Ганта по всему портфелю с масштабированием и фильтрами.</div>
+          </div>
+          <div class="help-card">
+            <div class="help-card-title"><span class="help-tag tag-pk">ПК</span></div>
+            <div class="help-card-body">Проектный Комитет — активные проекты с RAG-статусом и комментариями.</div>
+          </div>
+          <div class="help-card">
+            <div class="help-card-title"><span class="help-tag tag-dash">Дашборд</span></div>
+            <div class="help-card-body">KPI-карточки, диаграммы здоровья, типов, отделов и матрица скоринга.</div>
+          </div>
+          <div class="help-card">
+            <div class="help-card-title"><span class="help-tag tag-cr">Запросы на изменение</span></div>
+            <div class="help-card-body">Сводный список CR по всем проектам с быстрым переходом к документу.</div>
+          </div>
+          <div class="help-card">
+            <div class="help-card-title"><span class="help-tag tag-res">Ресурсный план</div></div>
+            <div class="help-card-body">Планирование занятости сотрудников по месяцам в часах и %, аналитика, блокировки периодов.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Портфель -->
+      <div class="help-section" id="h-portfolio">
+        <div class="help-section-title">Портфель — главный экран</div>
         <ul>
-          <li><b>Фильтр по статусу</b> — в левой панели. Цифра рядом — количество проектов.</li>
-          <li><b>Поиск</b> — по названию, ID, заказчику, руководителю проекта или отделу.</li>
+          <li><b>Папки-статусы слева</b> — кликните на статус, чтобы отфильтровать таблицу. Цифра в скобках — количество проектов.</li>
+          <li><b>«Все»</b> — по умолчанию показывает все проекты <b>кроме</b> «Завершён» и «Отменён».
+            Клик по самим папкам «Завершён» / «Отменён» откроет их отдельно.</li>
+          <li><b>Поиск</b> — по названию, ID, заказчику, руководителю проекта или отделу. Работает по частичному совпадению.</li>
+          <li><b>Фильтры в тулбаре</b>: Отдел, Приоритет, Рук. проекта, Заказчик, Куратор.
+            Работают <b>аддитивно</b>: выбрали отдел — числа в папках слева пересчитаются с учётом этого отбора.</li>
+          <li><b>Сортировка</b> — кликните по любому заголовку столбца. Повторный клик — обратный порядок.</li>
           <li><b>Клик на строку</b> — открывает карточку проекта справа.</li>
         </ul>
+        <div class="help-tip">Поле <b>«Проектов: 53 из 209»</b> показывает, сколько проектов сейчас в таблице из общего числа в портфеле.
+          53 — это активные проекты («Все» по умолчанию). Остальные 156 — завершённые и отменённые.</div>
       </div>
 
-      <div class="help-section">
-        <div class="help-section-title">Вкладка «Ганта портфеля»</div>
+      <!-- Ганта -->
+      <div class="help-section" id="h-gantt">
+        <div class="help-section-title">Ганта портфеля</div>
         <ul>
           <li><b>Диаграмма Ганта</b> по всем проектам портфеля на одном экране.</li>
-          <li><b>Фильтры</b>: статус, отдел, приоритет, заказчик, руководитель проекта.</li>
-          <li><b>Только активные</b> — скрывает завершённые и отменённые проекты.</li>
-          <li><b>Масштаб</b>: Квартал (3 мес), Полугодие (6 мес), Год (12 мес), <b>Весь портфель</b> (все даты из CSV).</li>
+          <li><b>Фильтры</b>: статус, отдел, приоритет, заказчик, руководитель проекта, куратор.</li>
+          <li><b>Масштаб</b>: Квартал (3 мес), Полугодие (6 мес), Год (12 мес), <b>Весь портфель</b> (все даты).</li>
+          <li><b>«Только активные»</b> — скрывает завершённые и отменённые проекты.</li>
           <li><b>Красная вертикальная линия</b> — сегодняшняя дата.</li>
-          <li><b>Красные полосы</b> — просроченные проекты (план. окончание в прошлом, статус не «Завершён»/«Отменён»).</li>
-          <li><b>Клик на строку</b> — открывает карточку проекта.</li>
+          <li><b>Красные полосы</b> — просроченные проекты.</li>
+          <li><b>Клик на полосу</b> — откроет карточку проекта.</li>
         </ul>
       </div>
 
-      <div class="help-section">
-        <div class="help-section-title">Вкладка «ПК»</div>
+      <!-- ПК -->
+      <div class="help-section" id="h-pk">
+        <div class="help-section-title">ПК — Проектный комитет</div>
         <ul>
-          <li><b>Таблица Проектного Комитета</b> — активные проекты с RAG-статусом.</li>
-          <li><b>Красный</b> — срок завершения уже прошёл.</li>
-          <li><b>Жёлтый</b> — срок завершается в течение 30 дней.</li>
-          <li><b>Зелёный</b> — срок не критичный.</li>
-          <li><b>Клик на строку</b> — открывает карточку проекта.</li>
-          <li><b>Комментарий</b> — кликните на ячейку комментария, введите текст и нажмите «Сохранить».</li>
+          <li>Отдельная таблица только активных проектов со своими счётчиками и RAG-статусом.</li>
+          <li><b class="help-status-badge"><span class="help-status-dot" style="background:#EF4444"></span>Красный</b> — срок завершения уже прошёл.</li>
+          <li><b class="help-status-badge"><span class="help-status-dot" style="background:#F59E0B"></span>Жёлтый</b> — срок в течение 30 дней.</li>
+          <li><b class="help-status-badge"><span class="help-status-dot" style="background:#10B981"></span>Зелёный</b> — срок не критичный.</li>
+          <li><b>Комментарий ПК</b> — кликните по ячейке комментария, введите текст, нажмите «Сохранить».</li>
+          <li><b>Сортировка</b> — по названию и скорингу (клик по заголовкам).</li>
         </ul>
       </div>
 
-      <div class="help-section">
-        <div class="help-section-title">Карточка проекта — вкладки</div>
+      <!-- Дашборд -->
+      <div class="help-section" id="h-dashboard">
+        <div class="help-section-title">Дашборд</div>
+        <ul>
+          <li><b>KPI-карточки сверху</b>: всего проектов, в работе, требуется вмешательство, есть риски, на паузе, жёсткие дедлайны, завершено.</li>
+          <li><b>Вкладки графиков</b> под карточками всегда прилиплены к верху при прокрутке — не потеряете навигацию.</li>
+          <li><b>Здоровье портфеля</b> и <b>Статус проекта</b> — две круговые диаграммы, распределение по RAG и статусам.</li>
+          <li><b>По типам проектов</b> — донат с распределением по типу (L1/L2/L3).</li>
+          <li><b>По отделам</b> — stack-bar с здоровьем (красно/жёлто/зелёно) по каждому отделу.</li>
+          <li><b>Скоринг (матрица)</b> — пузырьковая диаграмма «Итоговый балл × Стратегическая важность», размер пузыря — Сложность и Риски. Клик по пузырьку — карточка проекта.</li>
+          <li><b>Фильтр проектов в скоринге</b> — кнопка «Проекты: все», поиск + чекбоксы, «Выбрать все» / «Сбросить».</li>
+        </ul>
+      </div>
+
+      <!-- Запросы на изменение -->
+      <div class="help-section" id="h-cr">
+        <div class="help-section-title">Запросы на изменение</div>
+        <ul>
+          <li>Сводный список всех документов типа <b>«Запрос на изменение»</b>, найденных в папках проектов.</li>
+          <li><b>Фильтр по проекту</b> — сверху выпадающий список.</li>
+          <li><b>Клик по кнопке документа</b> — откроет его в браузере (PDF/картинки — прямо, DOCX/XLSX — через Office Web Viewer).</li>
+          <li>Дата в колонке «Изменён» — время последней модификации файла в сетевой папке.</li>
+        </ul>
+      </div>
+
+      <!-- Ресурсный план -->
+      <div class="help-section" id="h-resource">
+        <div class="help-section-title">Ресурсный план</div>
+        <ul>
+          <li><b>Месяц</b> и <b>вид деятельности</b> (Проект / Операционная / Отпуск) — выбираются в верхней панели.</li>
+          <li><b>Сотрудник</b>, <b>Проект</b> (или Активность), <b>Часы</b> или <b>Лоадинг в %</b> — можно вводить любое из двух.</li>
+          <li><b>Аналитика</b> — выберите период (от / до) и нажмите «Обновить». Показывает загрузку по проектам, сотрудникам и месяцам.</li>
+          <li><b>Контроль заполнения</b> внизу — таблица по сотрудникам с итоговой загрузкой и статусом.</li>
+          <li><b>Блокировки</b> — закрывают период для всех, по отделу или по сектору от редактирования.</li>
+          <li><b>История</b> — журнал всех внесений и корректировок.</li>
+          <li><b>Скачать CSV/Excel</b> — экспорт текущего среза.</li>
+        </ul>
+      </div>
+
+      <!-- Карточка проекта -->
+      <div class="help-section" id="h-card">
+        <div class="help-section-title">Карточка проекта</div>
+        <p style="margin-bottom:8px;color:#4B5563">Открывается справа при клике на проект в Портфеле, ПК или на полосе Ганты.</p>
         <table class="help-table">
-          <tr><td>Команда</td><td>Все участники проекта с указанием роли (куратор, РП, заказчик и др.)</td></tr>
-          <tr><td>Документы</td><td>Файлы из сетевой папки проекта. Кликните на файл — откроется в программе.</td></tr>
-          <tr><td>Ганта</td><td>Визуальная шкала плановых и фактических сроков. Красная линия — сегодня.</td></tr>
-          <tr><td>Ссылки</td><td>Прямая ссылка на проект в Service Desk.</td></tr>
+          <tr><td>Сводная панель</td><td>Статус, Индикатор здоровья, Заказчик, РП, План/Факт даты, Дата дедлайна, Жёсткий дедлайн, Отдел, Тип, Куратор, Страт. важность, Сложность/риск, Скоринг.</td></tr>
+          <tr><td>Цель проекта</td><td>Полный текст цели из карточки проекта Service Desk (если заполнена).</td></tr>
+          <tr><td>Документы</td><td>Файлы из сетевой папки, сгруппированные по этапам жизненного цикла. Клик на иконку или название — просмотр в браузере; стрелка — скачать.</td></tr>
+          <tr><td>Полнота</td><td>Проверка комплектности документов по Регламенту УП, с учётом уровня проекта (L1/L2/L3). Зелёная — найден, красная — отсутствует.</td></tr>
+          <tr><td>Ссылки</td><td>Прямая ссылка на карточку проекта в Service Desk.</td></tr>
+        </table>
+        <div class="help-tip">Вкладки <b>Команда</b> и <b>Ганта</b> временно скрыты:
+          команда — из-за некорректных ролей в SD, ганта по этапам — пока нет источника дат этапов. Вернем как только появятся данные.</div>
+      </div>
+
+      <!-- Статусы -->
+      <div class="help-section" id="h-statuses">
+        <div class="help-section-title">Статусы и цвета</div>
+        <table class="help-table">
+          <tr><td><span class="help-status-badge"><span class="help-status-dot" style="background:#10B981"></span>Выполнение и контроль</span></td><td>Проект активно выполняется</td></tr>
+          <tr><td><span class="help-status-badge"><span class="help-status-dot" style="background:#2563EB"></span>Планирование</span></td><td>Проект в планировании</td></tr>
+          <tr><td><span class="help-status-badge"><span class="help-status-dot" style="background:#8B5CF6"></span>На паузе (On-Hold)</span></td><td>Работы временно приостановлены</td></tr>
+          <tr><td><span class="help-status-badge"><span class="help-status-dot" style="background:#0284C7"></span>Завершение</span></td><td>Финальная стадия</td></tr>
+          <tr><td><span class="help-status-badge"><span class="help-status-dot" style="background:#4F46E5"></span>Утвержден (В бэклоге)</span></td><td>Ожидает старта</td></tr>
+          <tr><td><span class="help-status-badge"><span class="help-status-dot" style="background:#9CA3AF"></span>Завершён</span></td><td>Проект закрыт</td></tr>
+          <tr><td><span class="help-status-badge"><span class="help-status-dot" style="background:#DC2626"></span>Отменён</span></td><td>Проект прекращён</td></tr>
         </table>
       </div>
 
-      <div class="help-section">
-        <div class="help-section-title">Цветовые обозначения статусов</div>
-        <table class="help-table">
-          <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#22c55e;margin-right:6px"></span>Выполнение и контроль</td><td>Проект активно выполняется</td></tr>
-          <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#eab308;margin-right:6px"></span>На паузе</td><td>Работы временно приостановлены</td></tr>
-          <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#a855f7;margin-right:6px"></span>Инициация / Планирование</td><td>Проект в начальной стадии</td></tr>
-          <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#3b82f6;margin-right:6px"></span>Завершение / В бэклоге</td><td>Финальная стадия или ожидание старта</td></tr>
-          <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#9ca3af;border:1px solid #d1d5db;margin-right:6px"></span>Завершён</td><td>Проект закрыт</td></tr>
-          <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#ef4444;margin-right:6px"></span>Отменён</td><td>Проект прекращён</td></tr>
-        </table>
+      <!-- Полнота документации -->
+      <div class="help-section" id="h-completeness">
+        <div class="help-section-title">Полнота документации (L1 / L2 / L3)</div>
+        <ul>
+          <li>Проверка комплектности документов под уровень проекта (L1 / L2 / L3), согласно Регламенту УП.</li>
+          <li>Для <b>L1</b>: Паспорт проекта заменяет Бизнес-инициативу и Устав.</li>
+          <li>Для <b>L3</b>: Отчёт о статусе в расширенном виде.</li>
+          <li>Общая полнота — процент сверху с цветом: зелёный ≥ 80%, жёлтый ≥ 50%, красный меньше.</li>
+          <li>Поиск документа — по ключевым словам в имени файла (не по всей папке).</li>
+        </ul>
       </div>
 
-      <div class="help-section">
+      <!-- Данные -->
+      <div class="help-section" id="h-data">
         <div class="help-section-title">Обновление данных</div>
         <p>Кнопка <b>Обновить</b> в правом верхнем углу перечитывает файлы
-        <code>projects.csv</code> и <code>members.csv</code> из папки
-        <code>wwwroot/data/</code> без перезапуска приложения.
+        <code>projects.csv</code> и <code>members.csv</code> без перезапуска приложения.
         Нажимайте после того как выгрузили свежие данные из Qlik или вручную обновили CSV.</p>
+        <div class="help-tip">Если после обновления вы видите старые данные — нажмите <b>Ctrl+Shift+R</b> для жёсткой перезагрузки браузера (сбрасывает кэш).</div>
       </div>
 
     </div>
