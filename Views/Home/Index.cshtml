@@ -2989,8 +2989,16 @@ function closeDetail() {
 }
 
 // ════ ДИАГРАММА ГАНТА (карточка) ═════════════════════════════════════════════
+// Вкладка Ганта в карточке временно скрыта — нет источника дат этапов.
+// Раньше r.start брался как min(дата модификации файла в папке-этапе), что давало
+// бессмысленные подписи вроде «апр. 2025» (без окончания). Как только появится
+// реальный источник этапов — вкладку и код возвращаем.
 function renderGantt(p) {
     const el = document.getElementById('ganttChart');
+    if (!el) return;
+    el.innerHTML = '<div class="gantt-empty">Данные о датах этапов проекта не ведутся. Как только появится источник, вкладка будет возвращена.</div>';
+    return;
+    /* — Старая логика сохранена ниже, отключена return’ом выше:
     const rows = [];
 
     const planS = parseRuDate(p.planStart), planE = parseRuDate(p.planEnd);
@@ -3074,6 +3082,7 @@ function renderGantt(p) {
       </div>`;
 
     el.innerHTML = `<div class="gantt-wrap">${axisHtml}${rowsHtml}</div>${legendHtml}`;
+    */
 }
 
 // ════ ПОЛНОТА ДОКУМЕНТОВ (по Регламенту УП, с привязкой к уровню L1/L2/L3) ════
