@@ -4460,25 +4460,41 @@ async function commitComment(projectId) {
 }
 
 // ════ ОТКРЫТИЕ ФАЙЛА ═════════════════════════════════════════════════════════
+// PDF/картинки — во встроенном модальном превью.
+// Office (DOCX/XLSX/PPTX) — через Office Web Viewer, когда сервер доступен
+// снаружи (прод на Render). Заголовок Content-Disposition: inline на preview
+// не помогает DOCX/XLSX — браузер открывать их не умеет без viewer.
 function openFile(path) {
     const ext = path.split('.').pop().toLowerCase();
-    const previewable = ['pdf','png','jpg','jpeg','gif','bmp','svg','txt','csv','mp4','webm'];
+    const inlinePreview = ['pdf','png','jpg','jpeg','gif','bmp','svg','txt','csv','mp4','webm'];
+    const officePreview = ['docx','xlsx','pptx','doc','xls','ppt'];
 
-    if (previewable.includes(ext)) {
-        // Превью в модальном окне без скачивания копии
-        const modal = document.getElementById('filePreviewModal');
-        const iframe = document.getElementById('filePreviewIframe');
-        const nameEl = document.getElementById('filePreviewName');
-        const dlLink = document.getElementById('filePreviewDownload');
+    const modal = document.getElementById('filePreviewModal');
+    const iframe = document.getElementById('filePreviewIframe');
+    const nameEl = document.getElementById('filePreviewName');
+    const dlLink = document.getElementById('filePreviewDownload');
 
-        nameEl.textContent = path.split(/[\\/]/).pop();
-        dlLink.href = BASE + '/api/file/download?path=' + encodeURIComponent(path);
+    nameEl.textContent = path.split(/[\\/]/).pop();
+    dlLink.href = BASE + '/api/file/download?path=' + encodeURIComponent(path);
+
+    if (inlinePreview.includes(ext)) {
         iframe.src = BASE + '/api/file/preview?path=' + encodeURIComponent(path);
         modal.classList.add('open');
-    } else {
-        // Неподдерживаемый тип — скачиваем
-        window.open(BASE + '/api/file/download?path=' + encodeURIComponent(path), '_blank');
+        return;
     }
+
+    if (officePreview.includes(ext)) {
+        // Office Online Viewer требует публично-доступный URL. На Render домен
+        // публичный, во внутреннем IIS — нет, в этом случае viewer покажет
+        // ошибку, но в модалке останется кнопка «Скачать».
+        const publicUrl = window.location.origin + BASE + '/api/file/download?path=' + encodeURIComponent(path);
+        iframe.src = 'https://view.officeapps.live.com/op/embed.aspx?src=' + encodeURIComponent(publicUrl);
+        modal.classList.add('open');
+        return;
+    }
+
+    // Неподдерживаемый тип — скачиваем
+    window.open(BASE + '/api/file/download?path=' + encodeURIComponent(path), '_blank');
 }
 
 // ════ УТИЛИТЫ ════════════════════════════════════════════════════════════════
