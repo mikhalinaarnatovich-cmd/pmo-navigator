@@ -2641,6 +2641,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         <a href="#h-pk">ПК</a>
         <a href="#h-dashboard">Дашборд</a>
         <a href="#h-cr">Запросы на изменение</a>
+        <a href="#h-doc-ctrl">Контроль документов</a>
         <a href="#h-resource">Ресурсный план</a>
         <a href="#h-card">Карточка проекта</a>
         <a href="#h-statuses">Статусы</a>
@@ -2672,6 +2673,10 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
           <div class="help-card">
             <div class="help-card-title"><span class="help-tag tag-cr">Запросы на изменение</span></div>
             <div class="help-card-body">Сводный список CR по всем проектам с быстрым переходом к документу.</div>
+          </div>
+          <div class="help-card">
+            <div class="help-card-title"><span class="help-tag" style="background:#FEF3C7;color:#92400E">Контроль документов</span></div>
+            <div class="help-card-body">Проверка статус-отчёта за месяц, бизнес-инициативы и итогового отчёта.</div>
           </div>
           <div class="help-card">
             <div class="help-card-title"><span class="help-tag tag-res">Ресурсный план</div></div>
@@ -2747,6 +2752,25 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
           <li><b>Клик по кнопке документа</b> — откроет его в браузере (PDF/картинки — прямо, DOCX/XLSX — через Office Web Viewer).</li>
           <li>Дата в колонке «Изменён» — время последней модификации файла в сетевой папке.</li>
         </ul>
+      </div>
+
+      <!-- Контроль документов -->
+      <div class="help-section" id="h-doc-ctrl">
+        <div class="help-section-title">Контроль документов</div>
+        <p style="margin-bottom:8px;color:#4B5563">Отдельная вкладка с тремя быстрыми проверками по всем активным проектам (включая «На паузе»).</p>
+        <ul>
+          <li><b>Статус-отчёт за текущий месяц</b> — какие проекты ещё не отчитались.
+            Ищется файл со словом «статус» в папке <code>3. Исполнение и Контроль</code>
+            с датой модификации в текущем календарном месяце. В колонке — дата последнего статус-отчёта (или «ни разу»).</li>
+          <li><b>Инициация без бизнес-инициативы</b> — только проекты в статусе «Инициация».
+            Ищется файл со словами «бизнес» / «инициатив» в папке <code>1. Инициация</code>.
+            Для L1-проектов вместо бизнес-инициативы проверяется Паспорт (по Регламенту УП).</li>
+          <li><b>Завершение без итогового отчёта</b> — только проекты в статусе «Завершение».
+            Ищется файл со словами «итогов» / «closure» в папке <code>4. Завершение</code>.</li>
+          <li><b>Клик по строке</b> — откроет карточку проекта.</li>
+          <li><b>Проверить заново</b> — сверху справа, если кто-то только что добавил документ.</li>
+        </ul>
+        <div class="help-tip">Первый запуск — при открытии вкладки. Занимает около 10–15 секунд — приложение читает папки по всем активным проектам.</div>
       </div>
 
       <!-- Ресурсный план -->
