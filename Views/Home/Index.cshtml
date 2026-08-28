@@ -488,6 +488,12 @@ input,select{font-family:inherit}
   font-size:12px;font-weight:600;cursor:pointer;transition:background .15s,transform .1s}
 .header-cr:hover{background:#047857}
 .header-cr.active{background:#047857;box-shadow:0 0 0 2px #6EE7B7}
+/* Контроль документов — проверка статус-отчёта, бизнес-инициативы, итогового отчёта */
+.header-doc{display:flex;align-items:center;gap:6px;padding:6px 14px;
+  background:rgba(245,158,11,.15);color:#B45309;border:1px solid rgba(245,158,11,.4);
+  border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s}
+.header-doc:hover{background:rgba(245,158,11,.3)}
+.header-doc.active{background:#D97706;color:#fff;border-color:#D97706;box-shadow:0 0 0 2px #FDE68A}
 
 /* ═══ LOADING OVERLAY ═══════════════════════════════════════════════════════ */
 .loading-overlay{position:fixed;inset:0;background:rgba(26,34,51,.65);
@@ -1793,6 +1799,14 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
     </svg>
     Запросы на изменение
   </button>
+  <!-- Контроль документов -->
+  <button class="header-doc" id="btnDocCtrl" title="Проверка ключевых документов по портфелю">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M9 11l3 3L22 4"/>
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+    </svg>
+    Контроль документов
+  </button>
   <!-- ПК -->
   <button class="header-pk" id="btnPK">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -2302,6 +2316,20 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
     </div>
   </div>
 
+  <!-- ════ ВИД КОНТРОЛЬ ДОКУМЕНТОВ ════════════════════════════════ -->
+  <div class="doc-view" id="docCtrlView">
+    <div class="doc-header-bar">
+      <div style="flex:1">
+        <div class="doc-header-title">Контроль документов</div>
+        <div class="doc-header-sub">Проверка ключевых документов по активным проектам портфеля</div>
+      </div>
+      <button class="doc-refresh-btn" id="btnDocCtrlRefresh" onclick="docCtrlRun()">Проверить заново</button>
+    </div>
+    <div class="doc-sections" id="docCtrlSections">
+      <div class="doc-loading">Нажмите «Проверить заново», чтобы запустить проверку.</div>
+    </div>
+  </div>
+
   <!-- ════ ВИД ПК (Проектный Комитет) ════════════════════════════════════ -->
   <!-- ════ ДАШБОРД ═════════════════════════════════════════════════════════ -->
   <div class="dashboard-view" id="dashboardView">
@@ -2776,6 +2804,7 @@ let portfolioViewActive = false;
 let pkViewActive = false;
 let crViewActive = false;
 let dashboardViewActive = false;
+let docCtrlViewActive = false;
 let pkComments = {}; // { projectId: "comment text" }
 let pkSortField = 'rag';  // 'rag' | 'name' | 'score'
 let pkSortDir   = 'desc'; // для скоринга по умолчанию — высокий вверху
@@ -3405,6 +3434,7 @@ function _clearMainActive() {
 function showPortfolio() {
     resourceShowMain();
     _clearMainActive();
+    _hideDocCtrl();
     portfolioViewActive = true;
     pkViewActive = false;
     crViewActive = false;
@@ -3425,6 +3455,7 @@ function showPortfolio() {
 function showPK() {
     resourceShowMain();
     _clearMainActive();
+    _hideDocCtrl();
     pkViewActive = true;
     portfolioViewActive = false;
     crViewActive = false;
@@ -3447,6 +3478,7 @@ function showPK() {
 function showCR() {
     resourceShowMain();
     _clearMainActive();
+    _hideDocCtrl();
     crViewActive = true;
     pkViewActive = false;
     portfolioViewActive = false;
@@ -3465,8 +3497,40 @@ function showCR() {
     renderCRTable();
 }
 
+// Скрытие вкладки Контроль документов при переходе на другую.
+function _hideDocCtrl() {
+    const v = document.getElementById('docCtrlView'); if (v) v.classList.remove('active');
+    const b = document.getElementById('btnDocCtrl'); if (b) b.classList.remove('active');
+    docCtrlViewActive = false;
+}
+
+function showDocCtrl() {
+    resourceShowMain();
+    _clearMainActive();
+    docCtrlViewActive = true;
+    portfolioViewActive = false;
+    pkViewActive = false;
+    crViewActive = false;
+    dashboardViewActive = false;
+    document.getElementById('mainView').style.display = 'none';
+    document.getElementById('sidebarNav').style.display = 'none';
+    document.getElementById('docCtrlView').classList.add('active');
+    document.getElementById('portfolioView').classList.remove('active');
+    document.getElementById('pkView').classList.remove('active');
+    document.getElementById('crView').classList.remove('active');
+    document.getElementById('dashboardView').classList.remove('active');
+    document.getElementById('btnDocCtrl').classList.add('active');
+    document.getElementById('btnPortfolio').classList.remove('active');
+    document.getElementById('btnPK').classList.remove('active');
+    document.getElementById('btnCR').classList.remove('active');
+    document.getElementById('btnDashboard').classList.remove('active');
+    // Автозапускаем проверку, если ещё не было первого запуска.
+    if (!docCtrlHasRun) docCtrlRun();
+}
+
 function showMain() {
     resourceShowMain();
+    _hideDocCtrl();
     portfolioViewActive = false;
     pkViewActive = false;
     crViewActive = false;
@@ -3489,6 +3553,7 @@ function showMain() {
 function showDashboard() {
     resourceShowMain();
     _clearMainActive();
+    _hideDocCtrl();
     dashboardViewActive = true;
     portfolioViewActive = false;
     pkViewActive = false;
@@ -3534,6 +3599,12 @@ document.getElementById('btnPK').addEventListener('click', () => {
 document.getElementById('btnCR').addEventListener('click', () => {
     if (crViewActive) showMain();
     else showCR();
+});
+
+// Кнопка Контроль документов: переключение
+document.getElementById('btnDocCtrl').addEventListener('click', () => {
+    if (docCtrlViewActive) showMain();
+    else showDocCtrl();
 });
 
 // ════ ПОРТФЕЛЬ — ФИЛЬТРЫ ══════════════════════════════════════════════════════
@@ -4901,6 +4972,203 @@ function renderCRTable() {
         </tr>`).join('');
 }
 /* ── Ресурсный план ───────────────────────────────────── */
+
+// ════ КОНТРОЛЬ ДОКУМЕНТОВ ═══════════════════════════════════════
+// 3 проверки:
+//  1) Статус-отчёт за текущий месяц (по всем активным вкл. На паузе).
+//  2) Бизнес-инициатива (для проектов в статусе «Инициация»; для L1 — Паспорт вместо).
+//  3) Итоговый отчёт (для проектов в статусе «Завершение»).
+
+let docCtrlHasRun = false;
+let docCtrlRunning = false;
+
+const DOC_CTRL_STATUS_ACTIVE = [
+    'Выполнение и контроль',
+    'Планирование',
+    'Инициация',
+    'Завершение',
+    'На паузе (On-Hold)',
+    'Утвержден (В бэклоге)',
+    'Отложен',
+];
+
+function docCtrlParseModified(s) {
+    if (!s) return null;
+    const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+    if (!m) return null;
+    return new Date(+m[3], +m[2] - 1, +m[1]);
+}
+
+function docCtrlFindFolder(folders, names) {
+    if (!folders) return null;
+    const set = names.map(n => n.toLowerCase());
+    return folders.find(f => set.includes((f.name || '').toLowerCase())) || null;
+}
+
+function docCtrlMatchFile(fileName, anyOf) {
+    const fn = (fileName || '').toLowerCase();
+    return anyOf.some(group => group.every(kw => fn.includes(kw)));
+}
+
+async function docCtrlRun() {
+    if (docCtrlRunning) return;
+    docCtrlRunning = true;
+    docCtrlHasRun = true;
+    const btn = document.getElementById('btnDocCtrlRefresh');
+    const box = document.getElementById('docCtrlSections');
+    if (btn) { btn.disabled = true; btn.textContent = 'Проверяю...'; }
+    box.innerHTML = '<div class="doc-loading">Проверяем ключевые документы по портфелю...</div>';
+
+    try {
+        const targets = allProjects.filter(p => DOC_CTRL_STATUS_ACTIVE.includes(p.status));
+
+        const now = new Date();
+        const curYear = now.getFullYear();
+        const curMonth = now.getMonth();
+
+        const details = [];
+        const BATCH = 10;
+        for (let i = 0; i < targets.length; i += BATCH) {
+            const batch = targets.slice(i, i + BATCH);
+            const res = await Promise.all(
+                batch.map(p =>
+                    fetch(BASE + `/api/projects/${p.projectId}`)
+                        .then(r => r.ok ? r.json() : null)
+                        .catch(() => null)
+                )
+            );
+            for (const d of res) if (d) details.push(d);
+            if (btn) btn.textContent = `Проверяю... ${Math.min(i + BATCH, targets.length)}/${targets.length}`;
+        }
+
+        const noStatusReport = [];
+        const noBusinessInit = [];
+        const noClosureReport = [];
+
+        const statusKeywords = [['отчет', 'статус'], ['отчёт', 'статус'], ['статус-отчёт'], ['статус']];
+        const businessKeywords = [['бизнес-инициатив'], ['бизнес', 'инициатив'], ['инициатив']];
+        const passportKeywords = [['паспорт']];
+        const closureKeywords = [['итогов'], ['closure']];
+
+        for (const d of details) {
+            const isL1 = (d.projectType || '').toLowerCase().includes('l1');
+
+            const execFolder = docCtrlFindFolder(d.folders,
+                ['3. Исполнение и Контроль', '3. Выполнение и Контроль']);
+            const statusFiles = (execFolder && execFolder.files || []).filter(f => docCtrlMatchFile(f.name, statusKeywords));
+            const statusThisMonth = statusFiles.find(f => {
+                const dt = docCtrlParseModified(f.modified);
+                return dt && dt.getFullYear() === curYear && dt.getMonth() === curMonth;
+            });
+            if (!statusThisMonth) {
+                const lastFile = statusFiles
+                    .map(f => ({ name: f.name, dt: docCtrlParseModified(f.modified), modified: f.modified }))
+                    .filter(x => x.dt)
+                    .sort((a, b) => b.dt - a.dt)[0];
+                noStatusReport.push({ project: d, lastStatusFile: lastFile || null });
+            }
+
+            if (d.status === 'Инициация') {
+                const initFolder = docCtrlFindFolder(d.folders, ['1. Инициация']);
+                const files = (initFolder && initFolder.files) || [];
+                const hasBusinessInit = files.some(f => docCtrlMatchFile(f.name, businessKeywords));
+                const hasPassport = files.some(f => docCtrlMatchFile(f.name, passportKeywords));
+                const ok = isL1 ? hasPassport : hasBusinessInit;
+                if (!ok) {
+                    noBusinessInit.push({
+                        project: d,
+                        isL1,
+                        docLabel: isL1 ? 'Паспорт проекта (L1)' : 'Бизнес-инициатива',
+                    });
+                }
+            }
+
+            if (d.status === 'Завершение') {
+                const closureFolder = docCtrlFindFolder(d.folders, ['4. Завершение']);
+                const files = (closureFolder && closureFolder.files) || [];
+                const hasClosure = files.some(f => docCtrlMatchFile(f.name, closureKeywords));
+                if (!hasClosure) noClosureReport.push({ project: d });
+            }
+        }
+
+        docCtrlRender(noStatusReport, noBusinessInit, noClosureReport, targets.length, curYear, curMonth);
+    } catch (e) {
+        console.error('Контроль документов — ошибка:', e);
+        box.innerHTML = '<div class="doc-empty-msg" style="color:#DC2626">Ошибка при загрузке данных. Попробуйте повторить позже.</div>';
+    } finally {
+        docCtrlRunning = false;
+        if (btn) { btn.disabled = false; btn.textContent = 'Проверить заново'; }
+    }
+}
+
+function docCtrlRender(noStatusReport, noBusinessInit, noClosureReport, totalChecked, curYear, curMonth) {
+    const MONTHS_RU = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+    const monthLabel = `${MONTHS_RU[curMonth]} ${curYear}`;
+
+    const section = (title, sub, items, renderRow, headers) => {
+        const cnt = items.length;
+        const okClass = cnt === 0 ? 'ok' : '';
+        const cntLabel = cnt === 0 ? 'всё ок' : String(cnt);
+        const body = cnt === 0
+            ? '<div class="doc-empty-msg" style="color:#065F46">Все проекты в порядке — нет пропусков.</div>'
+            : `<table class="doc-table">
+                <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+                <tbody>${items.map(renderRow).join('')}</tbody>
+              </table>`;
+        return `
+          <div class="doc-section">
+            <div class="doc-section-head ${okClass}">
+              <div style="flex:1">
+                <div class="doc-section-title">${title}</div>
+                <div class="doc-section-sub">${sub}</div>
+              </div>
+              <div class="doc-section-cnt ${okClass}">${cntLabel}</div>
+            </div>
+            <div class="doc-section-body">${body}</div>
+          </div>`;
+    };
+
+    const rowStatus = it => `
+        <tr onclick="loadDetail(${it.project.projectId})">
+          <td style="width:60px;color:#6B7280;font-weight:600">${it.project.projectId}</td>
+          <td>${esc(it.project.name)}</td>
+          <td style="width:180px;font-size:12px">${esc(it.project.projectManager || '—')}</td>
+          <td style="width:150px">${statusBadge(it.project.status)}</td>
+          <td style="width:200px;font-size:12px;color:#6B7280">${it.lastStatusFile ? 'последний: ' + esc(it.lastStatusFile.modified) : 'ни разу'}</td>
+        </tr>`;
+
+    const rowInit = it => `
+        <tr onclick="loadDetail(${it.project.projectId})">
+          <td style="width:60px;color:#6B7280;font-weight:600">${it.project.projectId}</td>
+          <td>${esc(it.project.name)}</td>
+          <td style="width:180px;font-size:12px">${esc(it.project.projectManager || '—')}</td>
+          <td style="width:220px"><span class="help-tag" style="background:#FEF3C7;color:#92400E">Нет: ${esc(it.docLabel)}</span></td>
+        </tr>`;
+
+    const rowClosure = it => `
+        <tr onclick="loadDetail(${it.project.projectId})">
+          <td style="width:60px;color:#6B7280;font-weight:600">${it.project.projectId}</td>
+          <td>${esc(it.project.name)}</td>
+          <td style="width:180px;font-size:12px">${esc(it.project.projectManager || '—')}</td>
+          <td style="width:220px"><span class="help-tag" style="background:#FEE2E2;color:#991B1B">Нет: Итоговый отчёт</span></td>
+        </tr>`;
+
+    const summary = `<div style="font-size:12px;color:#6B7280;padding:0 4px 4px">Проверено активных проектов: <b>${totalChecked}</b>. Клик по строке — откроет карточку проекта.</div>`;
+
+    document.getElementById('docCtrlSections').innerHTML = summary +
+        section(`Статус-отчёт за ${monthLabel}`,
+            'Активные проекты без статус-отчёта за текущий месяц (по дате модификации файла в папке «3. Исполнение и Контроль»)',
+            noStatusReport, rowStatus,
+            ['ID', 'Проект', 'Рук. проекта', 'Статус', 'Последний статус-отчёт']) +
+        section('Инициация без бизнес-инициативы',
+            'Проекты в статусе «Инициация» без бизнес-инициативы в папке «1. Инициация». Для L1 проверяется Паспорт (заменяет бизнес-инициативу).',
+            noBusinessInit, rowInit,
+            ['ID', 'Проект', 'Рук. проекта', 'Недостающий документ']) +
+        section('Завершение без итогового отчёта',
+            'Проекты в статусе «Завершение» без итогового отчёта в папке «4. Завершение» (ключевые слова: «итогов», «closure»).',
+            noClosureReport, rowClosure,
+            ['ID', 'Проект', 'Рук. проекта', 'Недостающий документ']);
+}
 
 let resourceViewActive = false;
 let resourceReferenceLoaded = false;
