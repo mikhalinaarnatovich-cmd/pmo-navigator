@@ -28,9 +28,21 @@ public class DataService : IDataService
         _env = env;
         _log = log;
         var cfgPath = config["ProjectsDataPath"];
-        _dataDir = !string.IsNullOrWhiteSpace(cfgPath)
-            ? cfgPath
-            : Path.Combine(_env.WebRootPath, "data");
+        var localFallback = Path.Combine(_env.WebRootPath, "data");
+        if (!string.IsNullOrWhiteSpace(cfgPath) && Directory.Exists(cfgPath))
+        {
+            _dataDir = cfgPath;
+        }
+        else
+        {
+            // Сетевой путь не задан или недоступен (напр. на Render/Docker — нет
+            // доступа к \\Srv-fs10\...). Используем встроенные тестовые данные.
+            if (!string.IsNullOrWhiteSpace(cfgPath))
+            {
+                _log.LogWarning("ProjectsDataPath \"{Path}\" недоступен, включаем fallback на wwwroot/data.", cfgPath);
+            }
+            _dataDir = localFallback;
+        }
         Load();
     }
 
