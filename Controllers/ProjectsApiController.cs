@@ -119,6 +119,7 @@ public class ProjectsApiController : ControllerBase
             p.Curator,
             p.ProjectManager,
             p.Goal,
+            p.Progress,
             p.Status,
             p.ProjectType,
             p.PlanStart,

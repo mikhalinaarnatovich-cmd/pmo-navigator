@@ -2585,11 +2585,15 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
       </div>
       <div class="detail-tabs">
         <button class="dtab active" data-tab="docs">Документы</button>
+        <button class="dtab" data-tab="progress">Прогресс</button>
         <button class="dtab" data-tab="completeness">Полнота</button>
         <button class="dtab" data-tab="links">Ссылки</button>
       </div>
       <div class="dtab-content active" id="tab-docs">
         <div id="docsList"></div>
+      </div>
+      <div class="dtab-content" id="tab-progress">
+        <div id="progressBlock"></div>
       </div>
       <div class="dtab-content" id="tab-completeness">
         <div id="completenessList"></div>
@@ -2795,6 +2799,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
           <tr><td>Сводная панель</td><td>Статус, Индикатор здоровья, Заказчик, РП, План/Факт даты, Дата дедлайна, Жёсткий дедлайн, Отдел, Тип, Куратор, Страт. важность, Сложность/риск, Скоринг.</td></tr>
           <tr><td>Цель проекта</td><td>Полный текст цели из карточки проекта Service Desk (если заполнена).</td></tr>
           <tr><td>Документы</td><td>Файлы из сетевой папки, сгруппированные по этапам жизненного цикла. Клик на иконку или название — просмотр в браузере; стрелка — скачать.</td></tr>
+          <tr><td>Прогресс</td><td>Общий прогресс проекта — большое текстовое поле из SD (колонка «Общий прогресс проекта»).</td></tr>
           <tr><td>Полнота</td><td>Проверка комплектности документов по Регламенту УП, с учётом уровня проекта (L1/L2/L3). Зелёная — найден, красная — отсутствует.</td></tr>
           <tr><td>Ссылки</td><td>Прямая ссылка на карточку проекта в Service Desk.</td></tr>
         </table>
@@ -3169,6 +3174,15 @@ async function loadDetail(id) {
         const goal = (p.goal || '').trim();
         document.getElementById('dGoalSection').style.display = goal ? '' : 'none';
         document.getElementById('dGoal').textContent = goal;
+
+        // Общий прогресс проекта — большое текстовое поле из SD (колонка «Общий прогресс проекта»)
+        const progress = (p.progress || '').trim();
+        const progressEl = document.getElementById('progressBlock');
+        if (progressEl) {
+            progressEl.innerHTML = progress
+                ? `<div class="detail-goal" style="white-space:pre-wrap">${esc(progress)}</div>`
+                : `<div class="doc-empty" style="padding:20px;text-align:center;color:#9CA3AF">Прогресс проекта в Service Desk не заполнен.</div>`;
+        }
 
         // Команда
         const mList = document.getElementById('membersList');

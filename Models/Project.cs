@@ -52,6 +52,10 @@ public class Project
     [Name("Цель проекта")]
     public string Goal { get; set; } = "";
 
+    [Optional]
+    [Name("Общий прогресс проекта")]
+    public string Progress { get; set; } = "";
+
     [Name("Причина")]
     public string Reason { get; set; } = "";
 
