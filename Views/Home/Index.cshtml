@@ -1913,7 +1913,6 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
             <th class="col-pm" data-sort="projectManager" style="cursor:pointer" title="Сортировать">Рук. проекта ↕</th>
             <th data-sort="planEnd" style="cursor:pointer" title="Сортировать">План. дата ↕</th>
             <th data-sort="status" style="cursor:pointer" title="Сортировать">Статус ↕</th>
-            <th class="col-prio" data-sort="priority" style="cursor:pointer" title="Сортировать">Приоритет ↕</th>
           </tr>
         </thead>
         <tbody id="projectsTbody"></tbody>
@@ -3121,11 +3120,10 @@ function renderTable() {
         <td class="col-pm">${esc(p.projectManager || '—')}</td>
         <td class="col-dates">${formatDateRange(p.planStart, p.planEnd)}</td>
         <td>${statusBadge(p.status)}</td>
-        <td class="col-prio">${priorityHtml(p.priority)}</td>
       </tr>`;
     }).join('');
     if (list.length > MAX_ROWS) {
-        tbody.innerHTML += `<tr><td colspan="7" style="text-align:center;padding:12px;color:#9CA3AF;font-size:12px">Показано ${MAX_ROWS} из ${list.length}. Уточните поиск, чтобы увидеть остальные.</td></tr>`;
+        tbody.innerHTML += `<tr><td colspan="6" style="text-align:center;padding:12px;color:#9CA3AF;font-size:12px">Показано ${MAX_ROWS} из ${list.length}. Уточните поиск, чтобы увидеть остальные.</td></tr>`;
     }
 }
 
