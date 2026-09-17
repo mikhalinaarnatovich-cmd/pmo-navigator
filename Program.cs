@@ -247,6 +247,15 @@ if (connStr.StartsWith("Host=") || connStr.Contains("Port=5432"))
     }
 }
 
+// Поддержка любого виртуального каталога IIS (/pmo, /pmo-nav и т.п.).
+// IIS автоматически передаёт PathBase через ANCM, нужно только его активировать.
+// Дополнительно: можно выставить PATH_BASE в переменных среды (напр. /pmo).
+var pathBase = Environment.GetEnvironmentVariable("PATH_BASE");
+if (!string.IsNullOrWhiteSpace(pathBase))
+{
+    app.UsePathBase(pathBase);
+}
+
 app.UseStaticFiles();
 
 if (!disableAuth)

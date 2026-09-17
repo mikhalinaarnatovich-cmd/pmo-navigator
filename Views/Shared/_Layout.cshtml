@@ -3,6 +3,11 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    @{
+        var pathBase = Context.Request.PathBase.HasValue ? Context.Request.PathBase.Value : "";
+        var baseHref = string.IsNullOrEmpty(pathBase) ? "/" : pathBase.TrimEnd('/') + "/";
+    }
+    <base href="@baseHref" />
     <title>PMO Навигатор</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

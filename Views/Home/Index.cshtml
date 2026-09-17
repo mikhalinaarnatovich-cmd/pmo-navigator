@@ -2849,7 +2849,25 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
 </div>
 
 <script>
-const BASE = window.location.pathname.startsWith('/pmo') ? '/pmo' : '';
+// BASE = PathBase приложения, вычисляем автоматически из URL текущей страницы.
+// Подключает любой виртуальный каталог IIS (/pmo, /pmo-nav, /Navigator, в корне и т.п.)
+// без правки кода. Логика: начинаем от pathname, отбрасываем последнюю
+// часть (Home/Index или просто /), остаётся префикс приложения.
+const BASE = (function () {
+    // Если сервер прокинул PathBase через <base href>, берём оттуда (самый надёжный вариант).
+    const baseTag = document.querySelector('base[href]');
+    if (baseTag) {
+        try {
+            const u = new URL(baseTag.href, window.location.origin);
+            return u.pathname.replace(/\/+$/, '');
+        } catch (_) { /* fallback ниже */ }
+    }
+    // Fallback: выводим из pathname (без файловой части).
+    const path = window.location.pathname;
+    // /pmo/  -> /pmo    ; /pmo/Home/Index -> /pmo
+    return path.replace(/\/(Home\/[^/]*)?\/?$/i, '');
+})();
+console.log('[PMO] BASE =', JSON.stringify(BASE), 'window.location.pathname =', window.location.pathname);
 // ════ СОСТОЯНИЕ ═════════════════════════════════════════════════════════════
 let currentStatus = 'Все';
 // Виртуальный «все» = все кроме Завершён и Отменён
