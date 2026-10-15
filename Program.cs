@@ -3,8 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using PmoNav.Data;
 using PmoNav.Services;
 using Npgsql;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
+
+// Поддержка Windows-1251 для CSV-выгрузки, в том числе на Linux/Render.
+Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 var builder = WebApplication.CreateBuilder(args);
 

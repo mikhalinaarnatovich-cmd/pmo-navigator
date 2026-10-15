@@ -11,6 +11,7 @@
 	  <PackageReference Include="ClosedXML" Version="0.104.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="8.0.0" />
     <PackageReference Include="CsvHelper" Version="33.0.1" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
 
     <!-- MS SQL (обратная совместимость) -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
