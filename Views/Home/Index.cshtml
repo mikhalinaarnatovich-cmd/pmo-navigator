@@ -5260,7 +5260,7 @@ let resourceReferenceLoaded = false;
 let resourceProjects = [];
 
 function resourceApiUrl(path = '') {
-    const base = `${BASE}api/resource-plan`;
+    const base = `${BASE}/api/resource-plan`;
     return path
         ? `${base}/${String(path).replace(/^\/+/, '')}`
         : base;
