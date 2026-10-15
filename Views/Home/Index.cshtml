@@ -1316,12 +1316,19 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
     align-items: center;
     justify-content: space-between;
     border-bottom: 1px solid #E5E7EB;
+    gap: 16px;
 }
+.file-preview-header > span { min-width:0;max-height:4.5em;overflow:auto;overflow-wrap:anywhere; }
+.file-preview-header > div { flex-shrink:0; }
+.file-preview-status { padding:9px 20px;background:#F1F5F9;color:#475569;font-size:12px;line-height:1.5;border-bottom:1px solid #E2E8F0; }
+.file-preview-status.is-error { color:#991B1B;background:#FEF2F2; }
 .file-preview-iframe {
     flex: 1;
+    min-height: 0;
     border: none;
     width: 100%;
 }
+.file-preview-iframe[hidden] { display:none; }
 
 .resource-empty {
     color: #9CA3AF;
@@ -2791,7 +2798,15 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         <ul>
           <li>Сводный список всех документов типа <b>«Запрос на изменение»</b>, найденных в папках проектов.</li>
           <li><b>Фильтр по проекту</b> — сверху выпадающий список.</li>
-          <li><b>Клик по кнопке документа</b> — откроет его в браузере (PDF/картинки — прямо, DOCX/XLSX — через Office Web Viewer).</li>
+          <li><b>Клик по кнопке документа</b> открывает просмотр внутри Навигатора:
+            PDF и изображения напрямую, DOCX и XLSX локально в браузере, без внешнего Office Viewer.</li>
+          <li><b>Word (DOCX)</b>: страницы, таблицы, изображения и колонтитулы отображаются по возможности;
+            шрифты, переносы и расположение элементов могут отличаться от Word. Доступен выбор масштаба.</li>
+          <li><b>Excel (XLSX)</b>: выбор видимого листа, значения и объединённые ячейки.
+            Диаграммы и точное оформление не воспроизводятся, формулы не пересчитываются.
+            Для больших листов показывается фрагмент до 1000 строк и 100 столбцов.</li>
+          <li><b>Только чтение</b>: оригинал не изменяется. Документ не отправляется во внешние сервисы.
+            Файлы больше 20 МБ, защищённые или неподдерживаемые документы открывайте через «Скачать оригинал».</li>
           <li>Дата в колонке «Изменён» — время последней модификации файла в сетевой папке.</li>
         </ul>
       </div>
@@ -2836,7 +2851,10 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         <table class="help-table">
           <tr><td>Сводная панель</td><td>Статус, Индикатор здоровья, Заказчик, РП, План/Факт даты, Дата дедлайна, Жёсткий дедлайн, Отдел, Тип, Куратор, Страт. важность, Сложность/риск, Скоринг.</td></tr>
           <tr><td>Цель проекта</td><td>Полный текст цели из карточки проекта Service Desk (если заполнена).</td></tr>
-          <tr><td>Документы</td><td>Файлы из сетевой папки, сгруппированные по этапам жизненного цикла. Клик на иконку или название — просмотр в браузере; стрелка — скачать.</td></tr>
+          <tr><td>Документы</td><td>Файлы из сетевой папки, сгруппированные по этапам жизненного цикла.
+            Клик на иконку или название открывает просмотр; стрелка скачивает оригинал.
+            DOCX и XLSX просматриваются локально, без отправки во внешние сервисы.
+            Оформление может отличаться; подробности и ограничения описаны в разделе «Запросы на изменение».</td></tr>
           <tr><td>Прогресс</td><td>Общий прогресс проекта — большое текстовое поле из SD (колонка «Общий прогресс проекта»).</td></tr>
           <tr><td>Полнота</td><td>Проверка комплектности документов по Регламенту УП, с учётом уровня проекта (L1/L2/L3). Зелёная — найден, красная — отсутствует.</td></tr>
           <tr><td>Ссылки</td><td>Прямая ссылка на карточку проекта в Service Desk.</td></tr>
@@ -4867,41 +4885,9 @@ async function commitComment(projectId) {
 }
 
 // ════ ОТКРЫТИЕ ФАЙЛА ═════════════════════════════════════════════════════════
-// PDF/картинки — во встроенном модальном превью.
-// Office (DOCX/XLSX/PPTX) — через Office Web Viewer, когда сервер доступен
-// снаружи (прод на Render). Заголовок Content-Disposition: inline на preview
-// не помогает DOCX/XLSX — браузер открывать их не умеет без viewer.
+// DOCX/XLSX — локальный изолированный просмотр; PDF/картинки — исходный preview.
 function openFile(path) {
-    const ext = path.split('.').pop().toLowerCase();
-    const inlinePreview = ['pdf','png','jpg','jpeg','gif','bmp','svg','txt','csv','mp4','webm'];
-    const officePreview = ['docx','xlsx','pptx','doc','xls','ppt'];
-
-    const modal = document.getElementById('filePreviewModal');
-    const iframe = document.getElementById('filePreviewIframe');
-    const nameEl = document.getElementById('filePreviewName');
-    const dlLink = document.getElementById('filePreviewDownload');
-
-    nameEl.textContent = path.split(/[\\/]/).pop();
-    dlLink.href = BASE + '/api/file/download?path=' + encodeURIComponent(path);
-
-    if (inlinePreview.includes(ext)) {
-        iframe.src = BASE + '/api/file/preview?path=' + encodeURIComponent(path);
-        modal.classList.add('open');
-        return;
-    }
-
-    if (officePreview.includes(ext)) {
-        // Office Online Viewer требует публично-доступный URL. На Render домен
-        // публичный, во внутреннем IIS — нет, в этом случае viewer покажет
-        // ошибку, но в модалке останется кнопка «Скачать».
-        const publicUrl = window.location.origin + BASE + '/api/file/download?path=' + encodeURIComponent(path);
-        iframe.src = 'https://view.officeapps.live.com/op/embed.aspx?src=' + encodeURIComponent(publicUrl);
-        modal.classList.add('open');
-        return;
-    }
-
-    // Неподдерживаемый тип — скачиваем
-    window.open(BASE + '/api/file/download?path=' + encodeURIComponent(path), '_blank');
+    return window.PmoFilePreview.open(path, BASE);
 }
 
 // ════ УТИЛИТЫ ════════════════════════════════════════════════════════════════
@@ -6276,20 +6262,22 @@ document.getElementById("btnResourceAnalyticsLoad")
 </div>
 
 <!-- Модальное окно: Превью документа -->
-<div class="file-preview-modal" id="filePreviewModal">
+<div class="file-preview-modal" id="filePreviewModal" role="dialog" aria-modal="true" aria-labelledby="filePreviewName">
     <div class="file-preview-box">
         <div class="file-preview-header">
             <span id="filePreviewName" style="font-weight:600;font-size:14px"></span>
             <div style="display:flex;gap:12px;align-items:center">
-                <a id="filePreviewDownload" href="#" target="_blank"
+                <a id="filePreviewDownload" href="#" target="_blank" rel="noopener"
                    style="font-size:12px;color:#2563EB;text-decoration:none">Скачать оригинал</a>
-                <button onclick="document.getElementById('filePreviewModal').classList.remove('open')"
+                <button id="filePreviewClose" aria-label="Закрыть просмотр документа" onclick="PmoFilePreview.close()"
                         style="border:none;background:none;font-size:22px;cursor:pointer;color:#9CA3AF">&times;</button>
             </div>
         </div>
-        <iframe id="filePreviewIframe" class="file-preview-iframe" src="about:blank"></iframe>
+        <div id="filePreviewStatus" class="file-preview-status" role="status" aria-live="polite"></div>
+        <iframe id="filePreviewIframe" title="Содержимое документа" class="file-preview-iframe" src="about:blank"></iframe>
     </div>
 </div>
+<script src="@Url.Content("~/js/file-preview.js")?v=1"></script>
 
 </body>
 </html>

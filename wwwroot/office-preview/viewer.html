@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Isolated renderer: no network connections or external document assets. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data: blob:; font-src data: blob:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Просмотр документа</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; font: 14px system-ui, sans-serif; color: #253247; background: #edf0f4; }
+    body { display: flex; flex-direction: column; }
+    [hidden] { display: none !important; }
+    .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 9px 14px; background: white; border-bottom: 1px solid #d4dbe4; }
+    select { font: inherit; padding: 5px 8px; border: 1px solid #b8c2cf; border-radius: 5px; max-width: 260px; }
+    #note { font-size: 12px; color: #526176; }
+    #viewport { flex: 1; min-height: 0; overflow: auto; }
+    #word .docx-wrapper { background: transparent; padding: 20px; align-items: flex-start; width: max-content; min-width: 100%; }
+    #word .docx-wrapper > section.docx { margin-left: auto; margin-right: auto; }
+    #sheet { padding: 12px; }
+    table { border-collapse: collapse; background: white; font-size: 13px; }
+    th, td { border: 1px solid #d6dce4; padding: 6px 9px; min-width: 72px; max-width: 360px; white-space: pre-wrap; overflow-wrap: anywhere; vertical-align: top; }
+    thead th { position: sticky; top: 0; z-index: 2; background: #e4ebf4; }
+    tbody th { position: sticky; left: 0; background: #f0f3f7; font-weight: 500; min-width: 40px; }
+    #empty { padding: 28px; color: #526176; }
+  </style>
+  <script src="../vendor/office-preview/jszip.min.js" defer></script>
+  <script src="../vendor/office-preview/docx-preview.min.js" defer></script>
+  <script src="../vendor/office-preview/xlsx.full.min.js" defer></script>
+  <script src="viewer.js?v=1" defer></script>
+</head>
+<body>
+  <div class="toolbar">
+    <label id="zoomLabel">Масштаб
+      <select id="zoom" aria-label="Масштаб документа">
+        <option value="0.5">50%</option><option value="0.75">75%</option>
+        <option value="1" selected>100%</option><option value="1.25">125%</option><option value="1.5">150%</option>
+      </select>
+    </label>
+    <label id="sheetLabel" hidden>Лист <select id="sheetSelect" aria-label="Лист книги"></select></label>
+    <span id="note" role="status">Подготовка документа…</span>
+  </div>
+  <div id="viewport"><div id="word"></div><div id="sheet" hidden></div><div id="empty" hidden></div></div>
+  <div id="wordStyles"></div>
+</body>
+</html>
