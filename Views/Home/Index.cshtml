@@ -9,6 +9,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>PMO Навигатор</title>
+<link rel="stylesheet" href="@Url.Content("~/css/feedback.css")?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1889,6 +1890,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
     Справка
   </button>
   <!-- Обновить -->
+  <button class="header-reload" id="btnFeedback" onclick="PmoFeedback.open(BASE)">Обратная связь</button>
   <button class="header-reload" id="btnReload" onclick="reloadData()">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
       <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
@@ -2886,6 +2888,20 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
           <li>Для <b>L3</b>: Отчёт о статусе в расширенном виде.</li>
           <li>Общая полнота — процент сверху с цветом: зелёный ≥ 80%, жёлтый ≥ 50%, красный меньше.</li>
           <li>Поиск документа — по ключевым словам в имени файла (не по всей папке).</li>
+        </ul>
+      </div>
+
+      <div class="help-section" id="h-feedback">
+        <div class="help-section-title">Обратная связь</div>
+        <ul>
+          <li><b>Кнопка «Обратная связь»</b> открывает форму: ошибка, предложение или вопрос.
+            Сообщение от 5 до 5000 символов; раздел подставляется при открытии формы.</li>
+          <li><b>Автор на IIS</b> определяется по рабочей учётной записи. В тестовом режиме можно указать имя, но оно не подтверждается.</li>
+          <li><b>После отправки</b> появляется номер обращения. При ошибке текст остаётся в форме.</li>
+          <li><b>«Обращения»</b>: фильтры по типу и периоду, список по 50 записей на странице.
+            Даты показаны по Минску. Экспорт в Excel включает все обращения по выбранным фильтрам, не только текущую страницу.</li>
+          <li><b>Доступ</b>: рабочий список и экспорт предназначены только владельцу.
+            На время проверки на Render включён открытый тестовый доступ: не отправляйте рабочие и персональные данные.</li>
         </ul>
       </div>
 
@@ -6278,6 +6294,42 @@ document.getElementById("btnResourceAnalyticsLoad")
     </div>
 </div>
 <script src="@Url.Content("~/js/file-preview.js")?v=1"></script>
+<dialog id="feedbackDialog" aria-labelledby="feedbackTitle">
+  <div class="fb-header"><h2 id="feedbackTitle">Обратная связь</h2><button class="fb-close" id="feedbackClose" aria-label="Закрыть обратную связь" type="button">&times;</button></div>
+  <div class="fb-body">
+    <p id="feedbackNotice" class="fb-notice"></p>
+    <div class="fb-tabs" role="tablist" aria-label="Разделы обратной связи">
+      <button class="fb-button" id="feedbackWriteTab" role="tab" aria-selected="true" aria-controls="feedbackFormPanel">Написать</button>
+      <button class="fb-button" id="feedbackInboxTab" role="tab" aria-selected="false" aria-controls="feedbackInboxPanel">Обращения</button>
+    </div>
+    <div id="feedbackStatus" class="fb-status" role="status" aria-live="polite"></div>
+    <section id="feedbackFormPanel" role="tabpanel" aria-labelledby="feedbackWriteTab">
+      <form id="feedbackForm">
+        <div class="fb-form-grid">
+          <label class="fb-field">Тип обращения<select id="feedbackKind"><option value="issue">Ошибка</option><option value="idea">Предложение</option><option value="question">Вопрос</option></select></label>
+          <label class="fb-field">Раздел<input id="feedbackSection" readonly></label>
+          <label class="fb-field">Автор<input id="feedbackAuthor" maxlength="120" autocomplete="name"><span id="feedbackAuthorHint" class="fb-hint"></span></label>
+        </div>
+        <label class="fb-field fb-message-field">Сообщение<textarea id="feedbackMessage" required minlength="5" maxlength="5000" placeholder="Что произошло или что хотелось бы улучшить?"></textarea></label>
+        <div class="fb-hint" id="feedbackLength">0 / 5000</div>
+        <div class="fb-actions"><button class="fb-button primary" id="feedbackSend" type="submit" disabled>Отправить</button><span class="fb-hint">Вложения пока не используются.</span></div>
+      </form>
+    </section>
+    <section id="feedbackInboxPanel" role="tabpanel" aria-labelledby="feedbackInboxTab" hidden>
+      <div class="fb-filters">
+        <label class="fb-field">Тип<select id="feedbackFilterKind"><option value="">Все</option><option value="issue">Ошибка</option><option value="idea">Предложение</option><option value="question">Вопрос</option></select></label>
+        <label class="fb-field">С<input type="date" id="feedbackFrom"></label>
+        <label class="fb-field">По<input type="date" id="feedbackTo"></label>
+        <button class="fb-button" id="feedbackRefresh">Показать</button>
+        <button class="fb-button primary" id="feedbackExport" disabled>Экспорт в Excel</button>
+      </div>
+      <p class="fb-hint" style="margin-bottom:10px">В Excel попадут все обращения по выбранным фильтрам. Дата и время: Минск.</p>
+      <div class="fb-table-wrap"><table class="fb-table"><thead><tr><th>№</th><th>Дата (Минск)</th><th>Тип</th><th>Автор</th><th>Раздел</th><th>Сообщение</th></tr></thead><tbody id="feedbackRows"></tbody></table><div class="fb-empty" id="feedbackEmpty"></div></div>
+      <div class="fb-pagination"><span class="fb-hint" id="feedbackPage"></span><button class="fb-button" id="feedbackPrev" disabled>Назад</button><button class="fb-button" id="feedbackNext" disabled>Далее</button></div>
+    </section>
+  </div>
+</dialog>
+<script src="@Url.Content("~/js/feedback.js")?v=1"></script>
 
 </body>
 </html>

@@ -15,6 +15,7 @@ public class PmoDbContext : DbContext
     public DbSet<WorkCalendarEntity> WorkCalendars => Set<WorkCalendarEntity>();
     public DbSet<PeriodLockEntity> PeriodLocks => Set<PeriodLockEntity>();
     public DbSet<ResourceAllocationAuditEntity> ResourceAllocationAudits => Set<ResourceAllocationAuditEntity>();
+    public DbSet<FeedbackEntry> FeedbackEntries => Set<FeedbackEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -137,6 +138,19 @@ public class PmoDbContext : DbContext
             entity.Property(x => x.NewValueJson);
 
             entity.HasIndex(x => new { x.EmployeeName, x.PeriodStart });
+        });
+
+        modelBuilder.Entity<FeedbackEntry>(entity =>
+        {
+            entity.ToTable("feedback", "dbo");
+            entity.HasKey(x => x.FeedbackId);
+            entity.HasIndex(x => x.RequestId).IsUnique();
+            entity.HasIndex(x => x.CreatedAt);
+            entity.Property(x => x.Kind).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Message).HasMaxLength(5000).IsRequired();
+            entity.Property(x => x.Section).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.AuthorName).HasMaxLength(256).IsRequired();
+            entity.Property(x => x.AuthorLogin).HasMaxLength(256);
         });
 
         // ── Приводим все имена таблиц/колонок к нижнему регистру ─────────

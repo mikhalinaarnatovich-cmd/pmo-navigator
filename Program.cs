@@ -6,6 +6,7 @@ using Npgsql;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Threading.RateLimiting;
 
 // Поддержка Windows-1251 для CSV-выгрузки, в том числе на Linux/Render.
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -28,6 +29,18 @@ if (!disableAuth)
 // MVC и текущие сервисы
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = 429;
+    options.AddPolicy("feedback-submit", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0
+            }));
+});
 
 builder.Services.AddSingleton<DataService>();
 builder.Services.AddSingleton<IDataService>(sp => sp.GetRequiredService<DataService>());
@@ -267,6 +280,7 @@ if (!disableAuth)
     app.UseAuthentication();
     app.UseAuthorization();
 }
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapControllerRoute(

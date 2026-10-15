@@ -205,3 +205,17 @@ ALTER TABLE dbo.ResourceAllocations ALTER COLUMN UpdatedAt TYPE TIMESTAMP;
 ALTER TABLE dbo.WorkCalendars ALTER COLUMN UpdatedAt TYPE TIMESTAMP;
 ALTER TABLE dbo.PeriodLocks ALTER COLUMN UpdatedAt TYPE TIMESTAMP;
 ALTER TABLE dbo.ResourceAllocationAudits ALTER COLUMN ChangedAt TYPE TIMESTAMP;
+
+-- Обратная связь: отдельная таблица, существующие данные не изменяются.
+CREATE TABLE IF NOT EXISTS dbo.feedback (
+    feedbackid BIGSERIAL PRIMARY KEY,
+    requestid UUID NOT NULL UNIQUE,
+    createdat TIMESTAMP WITH TIME ZONE NOT NULL,
+    kind VARCHAR(20) NOT NULL,
+    message VARCHAR(5000) NOT NULL,
+    section VARCHAR(100) NOT NULL,
+    authorname VARCHAR(256) NOT NULL,
+    authorlogin VARCHAR(256),
+    isanonymous BOOLEAN NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_feedback_createdat ON dbo.feedback (createdat);
