@@ -10,6 +10,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>PMO Навигатор</title>
 <link rel="stylesheet" href="@Url.Content("~/css/feedback.css")?v=1">
+<link rel="stylesheet" href="@Url.Content("~/css/tour.css")?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1881,7 +1882,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
   </button>
   </button>
   <!-- Справка -->
-  <button class="header-reload" onclick="document.getElementById('helpModal').classList.remove('hidden')">
+  <button class="header-reload" id="btnHelp" onclick="document.getElementById('helpModal').classList.remove('hidden')">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
       <circle cx="12" cy="12" r="10"/>
       <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
@@ -2666,8 +2667,14 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         </div>
       </div>
 
+      <div class="tour-start-card" id="h-tour">
+        <div><strong>Знакомство с Навигатором</strong><p>10 коротких шагов с подсветкой элементов. Тур не изменяет данные и запускается только по кнопке.</p></div>
+        <button class="tour-start-button" id="btnStartTour" type="button">Пройти обучение</button>
+      </div>
+
       <!-- Содержание -->
       <div class="help-toc">
+        <a href="#h-tour">Обучение</a>
         <a href="#h-portfolio">Портфель</a>
         <a href="#h-gantt">Ганта портфеля</a>
         <a href="#h-pk">ПК</a>
@@ -2678,13 +2685,14 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         <a href="#h-card">Карточка проекта</a>
         <a href="#h-statuses">Статусы</a>
         <a href="#h-completeness">Полнота документации</a>
+        <a href="#h-feedback">Обратная связь</a>
         <a href="#h-data">Данные</a>
       </div>
 
       <!-- Навигация — карточки вкладок -->
       <div class="help-section">
         <div class="help-section-title">Вкладки в шапке</div>
-        <p style="margin-bottom:8px;color:#4B5563">Шесть основных вкладок — каждая открывает свой режим работы.</p>
+        <p style="margin-bottom:8px;color:#4B5563">Основные разделы: каждый открывает свой режим работы.</p>
         <div class="help-cards">
           <div class="help-card">
             <div class="help-card-title"><span class="help-tag tag-portfolio">Портфель</span></div>
@@ -6330,6 +6338,25 @@ document.getElementById("btnResourceAnalyticsLoad")
   </div>
 </dialog>
 <script src="@Url.Content("~/js/feedback.js")?v=1"></script>
+<dialog id="pmoTour" aria-labelledby="tourTitle" aria-describedby="tourText">
+  <div class="tour-highlight" id="tourHighlight" aria-hidden="true"></div>
+  <div class="tour-bubble" id="tourBubble">
+    <button class="tour-close" id="tourClose" aria-label="Закрыть обучение" type="button">&times;</button>
+    <div class="tour-copy" aria-live="polite" aria-atomic="true">
+      <div class="tour-step" id="tourStep"></div>
+      <h2 class="tour-title" id="tourTitle"></h2>
+      <p class="tour-text" id="tourText"></p>
+      <p class="tour-hint" id="tourHint" hidden></p>
+    </div>
+    <div class="tour-navigation">
+      <button class="tour-nav-button" id="tourBack" type="button">Назад</button>
+      <button class="tour-nav-button primary" id="tourNext" type="button">Далее</button>
+      <button class="tour-skip" id="tourSkip" type="button">Пропустить</button>
+    </div>
+    <div class="tour-progress" id="tourProgress" aria-hidden="true"></div>
+  </div>
+</dialog>
+<script src="@Url.Content("~/js/tour.js")?v=1"></script>
 
 </body>
 </html>
