@@ -328,7 +328,7 @@ input,select{font-family:inherit}
 .pg-header{display:flex;margin-bottom:4px}
 .pg-header-spacer{width:220px;flex-shrink:0}
 .pg-axis-wrap{flex:1;position:relative;height:22px}
-.pg-axis-label{position:absolute;font-size:10px;color:#9CA3AF;
+.pg-axis-label{position:absolute;font-size:11px;color:#64748B;
   transform:translateX(-50%);white-space:nowrap;top:4px}
 .pg-axis-tick{position:absolute;top:0;bottom:0;width:1px;background:#E5E7EB}
 
@@ -338,34 +338,48 @@ input,select{font-family:inherit}
 .pg-row:hover{background:rgba(99,102,241,.06)}
 .pg-label-cell{width:220px;flex-shrink:0;padding:4px 10px 4px 0;
   display:flex;align-items:center;gap:8px}
-.pg-label-id{font-size:10px;color:#9CA3AF;flex-shrink:0;width:32px}
+.pg-label-id{font-size:10px;color:#64748B;flex-shrink:0;width:32px}
 .pg-label-name{font-size:12px;color:#111827;font-weight:500;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .pg-track-cell{flex:1;position:relative;height:26px}
 .pg-track{position:absolute;inset:3px 0;background:#F3F4F6;border-radius:4px}
 .pg-bar{position:absolute;top:3px;bottom:3px;border-radius:4px;
   min-width:4px;transition:opacity .15s;z-index:1}
-.pg-bar:hover{opacity:.85}
-.pg-bar.pg-active{background:#4F46E5}
-.pg-bar.pg-plan{background:#2563EB}
-.pg-bar.pg-pause{background:#8B5CF6}
-.pg-bar.pg-done{background:#9CA3AF;opacity:.7;border:1px solid #6B7280}
-.pg-bar.pg-init{background:#7C3AED}
-.pg-bar.pg-finish{background:#0284C7}
-.pg-bar.pg-cancel{background:#DC2626;opacity:.5}
-.pg-bar.pg-backlog{background:#A855F7}
-.pg-bar.pg-delay{background:#EA580C}
-.pg-bar.pg-overdue{background:#DC2626}
+.pg-bar:hover{filter:brightness(.95)}
+/* Общая палитра для полос, легенды и справки. Контур сохраняет читаемость мягких цветов. */
+.pg-status{border:1px solid transparent}
+.pg-status.pg-active{background:#76B89A;border-color:#387456}
+.pg-status.pg-plan{background:#7CAED6;border-color:#3F709B}
+.pg-status.pg-init{background:#D89CAB;border-color:#93576C}
+.pg-status.pg-pause{background:#EACB6A;border-color:#997722}
+.pg-status.pg-finish{background:#5EAAA8;border-color:#2F7275}
+.pg-status.pg-backlog{background:#B69B80;border-color:#79634C}
+.pg-status.pg-delay{background:#DF9E6F;border-color:#9A5E36}
+.pg-status.pg-done{background:#A8B0BA;border-color:#687584}
+.pg-status.pg-cancel{background:repeating-linear-gradient(135deg,#737C89 0,#737C89 4px,#CBD0D7 4px,#CBD0D7 7px);
+  border-color:#4B5563}
+.pg-status.pg-unknown{background:#E2E8F0;border-color:#64748B}
+/* Просрочка добавляет рамку, не подменяя цвет статуса. */
+.pg-status.pg-overdue{border:2px solid #B42336}
+.pg-overdue-label{color:#9F2436;font-weight:600}
+.pg-late-mark{display:inline-flex;align-items:center;justify-content:center;
+  flex-shrink:0;width:15px;height:15px;border:1px solid #B42336;border-radius:50%;
+  color:#9F2436;font-size:11px;font-weight:700}
 .pg-today-line{position:absolute;top:0;bottom:0;width:2px;
-  background:#DC2626;opacity:.8;z-index:5;border-radius:1px;pointer-events:none}
+  background:#B42336;z-index:5;border-radius:1px;pointer-events:none}
 .pg-grid-line{position:absolute;top:0;bottom:0;width:1px;
   background:#E5E7EB;z-index:0;pointer-events:none}
 
 /* Легенда портфеля */
-.pg-legend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 20px;
+.pg-legend{display:flex;gap:9px 16px;flex-wrap:wrap;padding:10px 20px;
   background:#fff;border-top:1px solid #E5E7EB;flex-shrink:0}
-.pg-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#6B7280}
-.pg-legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.pg-legend-title{width:100%;font-size:12px;font-weight:600;color:#374151}
+.pg-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#4B5563}
+.pg-legend-dot{width:22px;height:12px;border-radius:3px;flex-shrink:0}
+.pg-legend-overdue{background:#F8FAFC}
+.pg-legend-today{display:inline-block;width:2px;height:16px;margin:0 10px;
+  background:#B42336;flex-shrink:0}
+.pg-help-key{display:flex;gap:10px 18px;flex-wrap:wrap;margin:12px 0}
 .pg-empty{text-align:center;padding:60px 20px;color:#9CA3AF;font-size:13px}
 
 /* ═══ ПК — экран ════════════════════════════════════════════════════════════ */
@@ -2282,7 +2296,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
       <div class="pf-sep"></div>
 
       <label class="pf-checkbox-wrap">
-        <input type="checkbox" id="pfOnlyActive" onchange="renderPortfolioGantt()"> Только активные
+        <input type="checkbox" id="pfOnlyActive" checked onchange="renderPortfolioGantt()"> Только активные
       </label>
 
       <div class="pf-sep"></div>
@@ -2306,13 +2320,19 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
 
     <!-- Легенда -->
     <div class="pg-legend">
-      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#4F46E5"></div>Выполнение и контроль</div>
-      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#2563EB"></div>Планирование</div>
-      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#8B5CF6"></div>На паузе</div>
-      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#0284C7"></div>Завершение</div>
-      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#9CA3AF"></div>Завершён</div>
-      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#DC2626"></div>Просрочен / Отменён</div>
-      <div class="pg-legend-item"><div class="pg-legend-dot" style="background:#DC2626;opacity:.6;border:1px solid #DC2626"></div>Сегодня</div>
+      <div class="pg-legend-title">Цвет полосы: статус проекта</div>
+      <div class="pg-legend-item"><span class="pg-legend-dot pg-status pg-init" aria-hidden="true"></span>Инициация</div>
+      <div class="pg-legend-item"><span class="pg-legend-dot pg-status pg-plan" aria-hidden="true"></span>Планирование</div>
+      <div class="pg-legend-item"><span class="pg-legend-dot pg-status pg-active" aria-hidden="true"></span>Выполнение и контроль</div>
+      <div class="pg-legend-item"><span class="pg-legend-dot pg-status pg-pause" aria-hidden="true"></span>На паузе</div>
+      <div class="pg-legend-item"><span class="pg-legend-dot pg-status pg-finish" aria-hidden="true"></span>Завершение</div>
+      <div class="pg-legend-item"><span class="pg-legend-dot pg-status pg-backlog" aria-hidden="true"></span>Утверждён (в бэклоге)</div>
+      <div class="pg-legend-item"><span class="pg-legend-dot pg-status pg-delay" aria-hidden="true"></span>Отложен</div>
+      <div class="pg-legend-item"><span class="pg-legend-dot pg-status pg-done" aria-hidden="true"></span>Завершён</div>
+      <div class="pg-legend-item"><span class="pg-legend-dot pg-status pg-cancel" aria-hidden="true"></span>Отменён</div>
+      <div class="pg-legend-item"><span class="pg-legend-dot pg-status pg-unknown" aria-hidden="true"></span>Другой статус</div>
+      <div class="pg-legend-item"><span class="pg-legend-dot pg-status pg-overdue pg-legend-overdue" aria-hidden="true"></span>Просрочен: красная рамка, цвет статуса сохранён</div>
+      <div class="pg-legend-item"><span class="pg-legend-today" aria-hidden="true"></span>Сегодня: вертикальная линия</div>
     </div>
   </div>
 
@@ -2712,11 +2732,30 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
           <li><b>Диаграмма Ганта</b> по всем проектам портфеля на одном экране.</li>
           <li><b>Фильтры</b>: статус, отдел, приоритет, заказчик, руководитель проекта, куратор.</li>
           <li><b>Масштаб</b>: Квартал (3 мес), Полугодие (6 мес), Год (12 мес), <b>Весь портфель</b> (все даты).</li>
-          <li><b>«Только активные»</b> — скрывает завершённые и отменённые проекты.</li>
+          <li><b>«Только активные»</b> включено при каждом открытии Ганты и после сброса фильтров.
+            Скрывает только статусы «Завершён» и «Отменён»; проекты на паузе, в бэклоге и на этапе «Завершение» остаются.</li>
+          <li>Чтобы увидеть завершённые или отменённые проекты, снимите галочку <b>«Только активные»</b> и выберите нужный статус.</li>
+          <li><b>Цвет полосы</b> обозначает статус проекта. Отменённые проекты дополнительно отмечены штриховкой.</li>
           <li><b>Красная вертикальная линия</b> — сегодняшняя дата.</li>
-          <li><b>Красные полосы</b> — просроченные проекты.</li>
+          <li><b>Красная рамка полосы и знак «!» рядом с названием</b> обозначают просрочку:
+            плановая дата окончания прошла, а проект не завершён и не отменён.
+            Цвет статуса при этом сохраняется; подробности видны при наведении на полосу.</li>
           <li><b>Клик на полосу</b> — откроет карточку проекта.</li>
         </ul>
+        <div class="pg-help-key" aria-label="Цвета статусов на Ганте">
+          <span class="pg-legend-item"><span class="pg-legend-dot pg-status pg-init" aria-hidden="true"></span>Инициация: розовый</span>
+          <span class="pg-legend-item"><span class="pg-legend-dot pg-status pg-plan" aria-hidden="true"></span>Планирование: голубой</span>
+          <span class="pg-legend-item"><span class="pg-legend-dot pg-status pg-active" aria-hidden="true"></span>Выполнение и контроль: зелёный</span>
+          <span class="pg-legend-item"><span class="pg-legend-dot pg-status pg-pause" aria-hidden="true"></span>На паузе: жёлтый</span>
+          <span class="pg-legend-item"><span class="pg-legend-dot pg-status pg-finish" aria-hidden="true"></span>Завершение: бирюзовый</span>
+          <span class="pg-legend-item"><span class="pg-legend-dot pg-status pg-backlog" aria-hidden="true"></span>Бэклог: бежево-коричневый</span>
+          <span class="pg-legend-item"><span class="pg-legend-dot pg-status pg-delay" aria-hidden="true"></span>Отложен: персиковый</span>
+          <span class="pg-legend-item"><span class="pg-legend-dot pg-status pg-done" aria-hidden="true"></span>Завершён: серый</span>
+          <span class="pg-legend-item"><span class="pg-legend-dot pg-status pg-cancel" aria-hidden="true"></span>Отменён: тёмно-серый со штриховкой</span>
+          <span class="pg-legend-item"><span class="pg-legend-dot pg-status pg-unknown" aria-hidden="true"></span>Другой статус: светло-серый</span>
+          <span class="pg-legend-item"><span class="pg-legend-dot pg-status pg-overdue pg-legend-overdue" aria-hidden="true"></span>Просрочен: красная рамка</span>
+          <span class="pg-legend-item"><span class="pg-legend-today" aria-hidden="true"></span>Сегодня: вертикальная линия</span>
+        </div>
       </div>
 
       <!-- ПК -->
@@ -3520,6 +3559,10 @@ function showPortfolio() {
     resourceShowMain();
     _clearMainActive();
     _hideDocCtrl();
+    document.getElementById('pfOnlyActive').checked = true;
+    // Не оставляем несовместимый фильтр при возврате к активным проектам.
+    const statusSelect = document.getElementById('pfStatus');
+    if (['Завершён', 'Отменён'].includes(statusSelect.value)) statusSelect.value = '';
     portfolioViewActive = true;
     pkViewActive = false;
     crViewActive = false;
@@ -3750,7 +3793,7 @@ function resetPortfolioFilters() {
     document.getElementById('pfCustomer').value = '';
     document.getElementById('pfPM').value       = '';
     document.getElementById('pfCurator').value  = '';
-    document.getElementById('pfOnlyActive').checked = false;
+    document.getElementById('pfOnlyActive').checked = true;
     renderPortfolioGantt();
 }
 
@@ -3799,7 +3842,9 @@ function renderPortfolioGantt() {
     const container = document.getElementById('portfolioGantt');
 
     if (list.length === 0) {
-        container.innerHTML = '<div class="pg-empty">Нет проектов для отображения.<br>Попробуйте изменить фильтры.</div>';
+        container.innerHTML = '<div class="pg-empty">Нет проектов для отображения.<br>Попробуйте изменить фильтры.'
+            + (onlyActive ? '<br>Чтобы увидеть завершённые и отменённые проекты, снимите «Только активные».' : '')
+            + '</div>';
         return;
     }
 
@@ -3899,21 +3944,20 @@ function renderPortfolioGantt() {
             const clampL = Math.max(0, left);
             const clampR = Math.min(100, right);
             if (clampR > clampL) {
-                const barCls = isOverdue ? 'pg-overdue' : (STATUS_TO_BAR[p.status] || 'pg-plan');
-                const tooltip = `${p.name}\n${fmtDate(p.planStart)} — ${fmtDate(p.planEnd)}\n${p.status}${isOverdue ? '\n⚠ Просрочен' : ''}`;
-                barHtml = `<div class="pg-bar ${barCls}"
+                const barCls = (STATUS_TO_BAR[p.status] || 'pg-unknown') + (isOverdue ? ' pg-overdue' : '');
+                const tooltip = `${p.name}\n${fmtDate(p.planStart)} — ${fmtDate(p.planEnd)}\n${p.status}${isOverdue ? '\nПросрочен: плановая дата окончания прошла' : ''}`;
+                barHtml = `<div class="pg-bar pg-status ${barCls}"
                     style="left:${clampL}%;width:${clampR - clampL}%"
                     title="${esc(tooltip)}"></div>`;
             }
         }
 
-        const nameStyle = isOverdue ? 'color:#DC2626;font-weight:600' : '';
-
         return `
           <div class="pg-row" onclick="loadDetail(${p.projectId})" title="Открыть карточку проекта">
             <div class="pg-label-cell">
               <span class="pg-label-id">${p.projectId}</span>
-              <span class="pg-label-name" style="${nameStyle}">${esc(p.name)}</span>
+              <span class="pg-label-name${isOverdue ? ' pg-overdue-label' : ''}">${esc(p.name)}</span>
+              ${isOverdue ? '<span class="pg-late-mark" title="Просрочен" aria-label="Просрочен">!</span>' : ''}
             </div>
             <div class="pg-track-cell">
               <div class="pg-track"></div>
