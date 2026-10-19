@@ -36,6 +36,9 @@
     <None Update="Database/feedback_mssql.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Database/resource_master_mssql.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="wwwroot/data/**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

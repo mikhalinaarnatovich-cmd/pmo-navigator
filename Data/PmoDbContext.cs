@@ -45,6 +45,9 @@ public class PmoDbContext : DbContext
 
             entity.Property(x => x.AllocationPercent)
                 .HasPrecision(6, 2);
+            entity.Property(x => x.EmployeeAllocationPercent).HasPrecision(12, 6);
+            entity.Property(x => x.RateSnapshot).HasPrecision(8, 4);
+            entity.Property(x => x.ProjectNameSnapshot).HasMaxLength(1024);
 
             entity.Property(x => x.PlannedHours)
                 .HasPrecision(8, 2);
@@ -84,6 +87,7 @@ public class PmoDbContext : DbContext
             entity.Property(x => x.Login).HasMaxLength(256);
             entity.Property(x => x.Department).HasMaxLength(256);
             entity.Property(x => x.Sector).HasMaxLength(256);
+            entity.Property(x => x.EmployeeType).HasMaxLength(100);
             entity.Property(x => x.ManagerFullName).HasMaxLength(256);
             entity.Property(x => x.Rate).HasPrecision(5, 2);
 
@@ -198,8 +202,12 @@ public class ResourceAllocationEntity
 
     public DateOnly PeriodStart { get; set; }
 
-    /// <summary>Загрузка в % от ставки сотрудника (0..Rate*100).</summary>
+    /// <summary>Legacy: процент от полной ставки. Не переинтерпретировать старые строки.</summary>
     public decimal AllocationPercent { get; set; }
+    /// <summary>Новый ввод: 100% означает всю норму индивидуальной ставки.</summary>
+    public decimal? EmployeeAllocationPercent { get; set; }
+    public decimal? RateSnapshot { get; set; }
+    public string? ProjectNameSnapshot { get; set; }
 
     /// <summary>Введённые часы (если сотрудник вводит часы, а не %).</summary>
     public decimal? PlannedHours { get; set; }

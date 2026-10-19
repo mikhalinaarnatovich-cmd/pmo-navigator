@@ -17,14 +17,15 @@ public class Employee
     public string? Department { get; set; }
 
     public string? Sector { get; set; }
+    public string? EmployeeType { get; set; }
 
     /// <summary>ФИО непосредственного руководителя (из этого же справочника).</summary>
     public string? ManagerFullName { get; set; }
 
     /// <summary>
     /// Ставка сотрудника (FTE), например 1.00, 0.25, 1.25 (многоставочник).
-    /// Используется как предел суммарной загрузки вместо жёстких 100%:
-    /// лимит = Rate * 100%.
+    /// 100% загрузки соответствует всей норме этой ставки.
+    /// FTE = Rate * процент / 100.
     /// </summary>
     public decimal Rate { get; set; } = 1.00m;
 

@@ -60,23 +60,24 @@ public class ResourcePlanController : ControllerBase
             })
             .ToList();
 
+        // Импортированная история не теряет проект, если выгрузка каталога ещё не обновлена.
+        var catalogIds = _data.GetAll().Select(p => p.ProjectId).ToHashSet();
+        var importedProjects = await _db.ResourceAllocations.AsNoTracking()
+            .Where(x => x.Kind == "Project" && x.ProjectId != null && x.ProjectNameSnapshot != null)
+            .OrderByDescending(x => x.UpdatedAt)
+            .Select(x => new { x.ProjectId, x.ProjectNameSnapshot }).ToListAsync();
+        foreach (var p in importedProjects.DistinctBy(x => x.ProjectId))
+            if (!catalogIds.Contains(p.ProjectId!.Value))
+                projects.Add(new { projectId = p.ProjectId.Value, name = p.ProjectNameSnapshot!,
+                    status = "Из сохранённого плана", department = string.Empty });
+
         var directory = await _db.Employees
             .AsNoTracking()
             .Where(e => e.IsActive)
             .OrderBy(e => e.FullName)
             .ToListAsync();
 
-        // Если справочник ещё не заполнен для кого-то из участников проектов —
-        // всё равно показываем его в списке (с дефолтной ставкой 1.0), чтобы
-        // не блокировать заполнение плана, пока HR-данные подтягиваются.
-        var namesFromProjects = _data.GetAll()
-            .SelectMany(p => p.Members)
-            .Select(m => m.Person.Trim())
-            .Where(name => !string.IsNullOrWhiteSpace(name))
-            .Distinct(StringComparer.OrdinalIgnoreCase);
-
-        var directoryNames = directory.Select(e => e.FullName).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
+        // Состав и ставки берём только из справочника, не придумываем ставку участникам проектов.
         var employees = directory
             .Select(e => new
             {
@@ -85,21 +86,10 @@ public class ResourcePlanController : ControllerBase
                 department = e.Department,
                 sector = e.Sector,
                 managerFullName = e.ManagerFullName,
+                employeeType = e.EmployeeType,
                 rate = e.Rate,
-                capPercent = e.Rate * 100m,
+                capPercent = 100m,
             })
-            .Concat(namesFromProjects
-                .Where(name => !directoryNames.Contains(name))
-                .Select(name => new
-                {
-                    name,
-                    login = (string?)null,
-                    department = (string?)null,
-                    sector = (string?)null,
-                    managerFullName = (string?)null,
-                    rate = 1.00m,
-                    capPercent = 100m,
-                }))
             .OrderBy(e => e.name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
@@ -118,30 +108,17 @@ public class ResourcePlanController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetPlan(
         [FromQuery] DateOnly? period,
-        [FromQuery] string? managerFullName)
+        [FromQuery] string? managerFullName,
+        [FromQuery] string? department,
+        [FromQuery] string? sector)
     {
         var month = GetMonthStart(period);
 
-        var items = await _db.ResourceAllocations
+        var allocations = await _db.ResourceAllocations
             .AsNoTracking()
             .Where(x => x.PeriodStart == month)
             .OrderBy(x => x.EmployeeName)
             .ThenBy(x => x.ProjectId)
-            .Select(x => new
-            {
-                id = x.ResourceAllocationId,
-                employeeName = x.EmployeeName,
-                employeeLogin = x.EmployeeLogin,
-                kind = x.Kind,
-                projectId = x.ProjectId,
-                activityName = x.ActivityName,
-                periodStart = x.PeriodStart,
-                allocationPercent = x.AllocationPercent,
-                plannedHours = x.PlannedHours,
-                comment = x.Comment,
-                updatedAt = x.UpdatedAt,
-                updatedBy = x.UpdatedBy
-            })
             .ToListAsync();
 
         var directory = await _db.Employees
@@ -156,6 +133,10 @@ public class ResourcePlanController : ControllerBase
             scoped = directory.Where(e =>
                 string.Equals(e.ManagerFullName, managerFullName, StringComparison.OrdinalIgnoreCase));
         }
+        if (!string.IsNullOrWhiteSpace(department))
+            scoped = scoped.Where(e => e.Department == department);
+        if (!string.IsNullOrWhiteSpace(sector))
+            scoped = scoped.Where(e => (string.IsNullOrWhiteSpace(e.Sector) ? e.Department : e.Sector) == sector);
 
         var employeeNames = scoped
             .Select(e => e.FullName)
@@ -166,6 +147,18 @@ public class ResourcePlanController : ControllerBase
         // Фолбэк: если у руководителя пока никто не привязан в справочнике,
         // не показываем пустоту молча — но и не подменяем это полным списком.
         var directoryByName = directory.ToDictionary(e => e.FullName, StringComparer.OrdinalIgnoreCase);
+        var calendarHours = await GetWorkingHoursForMonth(month.Year, month.Month);
+        var items = allocations.Select(x => new
+        {
+            id = x.ResourceAllocationId, employeeName = x.EmployeeName, employeeLogin = x.EmployeeLogin,
+            kind = x.Kind, projectId = x.ProjectId, activityName = x.ActivityName, periodStart = x.PeriodStart,
+            allocationPercent = ResourcePlanningMath.OwnPercent(x, directoryByName.GetValueOrDefault(x.EmployeeName)?.Rate ?? 0m),
+            fullTimePercent = ResourcePlanningMath.Fte(x) * 100m,
+            plannedFte = ResourcePlanningMath.Fte(x),
+            plannedHours = ResourcePlanningMath.Hours(x, calendarHours),
+            rateSnapshot = x.RateSnapshot, calendarHoursForMonth = x.CalendarHoursForMonth,
+            comment = x.Comment, updatedAt = x.UpdatedAt, updatedBy = x.UpdatedBy
+        }).ToList();
 
         var totalByEmployee = items
             .GroupBy(x => x.employeeName, StringComparer.OrdinalIgnoreCase)
@@ -179,13 +172,13 @@ public class ResourcePlanController : ControllerBase
             {
                 var total = totalByEmployee.TryGetValue(name, out var value) ? value : 0m;
                 var rate = directoryByName.TryGetValue(name, out var emp) ? emp.Rate : 1.00m;
-                var cap = rate * 100m;
+                var cap = 100m;
 
-                var status = total == 0m
+                var status = rate <= 0 ? "Нет ставки" : total == 0m
                     ? "Не заполнил"
                     : total < cap
                         ? "Частично заполнено"
-                        : "Заполнено";
+                        : total > cap + 0.000001m ? "Превышение" : "Заполнено";
 
                 return new
                 {
@@ -223,6 +216,7 @@ public class ResourcePlanController : ControllerBase
             employees = employeeStatus,
             summary,
             locks,
+            calendarHours,
         });
     }
 
@@ -243,6 +237,8 @@ public class ResourcePlanController : ControllerBase
             .ToListAsync();
 
         var projectMap = _data.GetAll().ToDictionary(p => p.ProjectId);
+        var employeeRate = await _db.Employees.AsNoTracking().Where(e => e.FullName == employee.Trim())
+            .Select(e => (decimal?)e.Rate).FirstOrDefaultAsync() ?? 0m;
 
         var result = rows.Select(x => new
         {
@@ -252,9 +248,10 @@ public class ResourcePlanController : ControllerBase
             projectId = x.ProjectId,
             projectName = x.ProjectId.HasValue && projectMap.TryGetValue(x.ProjectId.Value, out var p)
                 ? p.Name
-                : x.ActivityName,
-            allocationPercent = x.AllocationPercent,
-            plannedHours = x.PlannedHours,
+                : x.ProjectNameSnapshot ?? x.ActivityName ?? $"Проект #{x.ProjectId}",
+            allocationPercent = ResourcePlanningMath.OwnPercent(x, employeeRate),
+            plannedFte = ResourcePlanningMath.Fte(x),
+            plannedHours = ResourcePlanningMath.Hours(x),
             comment = x.Comment,
             updatedAt = x.UpdatedAt,
             updatedBy = x.UpdatedBy,
@@ -385,29 +382,37 @@ public class ResourcePlanController : ControllerBase
 
     // ── Производственный календарь: перевод часов в %% от ставки ────────
 
-    private async Task<decimal> GetWorkingHoursForMonth(int year, int month)
+    private async Task<decimal?> GetWorkingHoursForMonth(int year, int month)
     {
         var row = await _db.WorkCalendars.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Year == year && x.Month == month);
 
-        if (row != null) return row.WorkingHours;
-
-        // Фолбэк, если календарь на этот месяц ещё не заведён администратором:
-        // считаем рабочие дни как будни (Пн-Пт) * 8 часов. Это приближение —
-        // точные нормы (с учётом праздников/переносов) нужно занести в WorkCalendars.
-        var daysInMonth = DateTime.DaysInMonth(year, month);
-        var workDays = 0;
-        for (var d = 1; d <= daysInMonth; d++)
-        {
-            var dow = new DateOnly(year, month, d).DayOfWeek;
-            if (dow != DayOfWeek.Saturday && dow != DayOfWeek.Sunday) workDays++;
-        }
-        return workDays * 8m;
+        return row?.WorkingHours > 0 ? row.WorkingHours : null;
     }
 
     // POST /api/resource-plan
     [HttpPost]
     public async Task<IActionResult> SaveAllocation([FromBody] SaveResourceAllocationRequest request)
+    {
+        await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+        try
+        {
+            var result = await SaveAllocationCore(request);
+            if (result is OkObjectResult) await transaction.CommitAsync();
+            return result;
+        }
+        catch (Exception ex) when (IsConcurrentWrite(ex))
+        {
+            return Conflict(new { message = "План одновременно изменил другой пользователь. Обновите данные и повторите сохранение." });
+        }
+    }
+
+    private static bool IsConcurrentWrite(Exception ex) =>
+        ex is Npgsql.PostgresException { SqlState: "40001" or "40P01" }
+        || ex is Microsoft.Data.SqlClient.SqlException { Number: 1205 }
+        || (ex.InnerException != null && IsConcurrentWrite(ex.InnerException));
+
+    private async Task<IActionResult> SaveAllocationCore(SaveResourceAllocationRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.EmployeeName))
             return BadRequest(new { message = "Укажите сотрудника." });
@@ -418,13 +423,18 @@ public class ResourcePlanController : ControllerBase
 
         int? projectId = null;
         string? activityName = null;
+        string? projectName = null;
 
         if (kind == "Project")
         {
             if (request.ProjectId is null or <= 0)
                 return BadRequest(new { message = "Выберите проект." });
 
-            if (_data.GetById(request.ProjectId.Value) == null)
+            projectName = _data.GetById(request.ProjectId.Value)?.Name;
+            projectName ??= await _db.ResourceAllocations.AsNoTracking()
+                .Where(x => x.ProjectId == request.ProjectId && x.ProjectNameSnapshot != null)
+                .OrderByDescending(x => x.UpdatedAt).Select(x => x.ProjectNameSnapshot).FirstOrDefaultAsync();
+            if (projectName == null)
                 return BadRequest(new { message = "Проект не найден в текущем списке проектов." });
 
             projectId = request.ProjectId;
@@ -442,31 +452,23 @@ public class ResourcePlanController : ControllerBase
         if (!isOpen)
             return BadRequest(new { message = reason ?? "Редактирование за этот период закрыто." });
 
-        // ── Определяем итоговый % загрузки: либо ввели часы, либо % напрямую ──
-        decimal? calendarHours = null;
-        decimal allocationPercent;
-
-        if (request.Hours is > 0)
-        {
-            calendarHours = await GetWorkingHoursForMonth(month.Year, month.Month);
-            allocationPercent = calendarHours > 0
-                ? Math.Round(request.Hours.Value / calendarHours.Value * 100m, 2)
-                : 0m;
-        }
-        else
-        {
-            allocationPercent = request.AllocationPercent ?? 0m;
-        }
-
-        if (allocationPercent < 0)
-            return BadRequest(new { message = "Загрузка не может быть отрицательной." });
-
-        // ── Предел загрузки — по ставке (FTE) сотрудника, а не жёстко 100% ──
-        // Это и есть логика для многоставочников: у сотрудника с 0.25 ставки
-        // предел 25%, а у совместителя с 1.25 ставки — 125%.
         var emp = await _db.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.FullName == employee);
-        var rate = emp?.Rate ?? 1.00m;
-        var capPercent = rate * 100m;
+        if (emp == null || !emp.IsActive || emp.Rate <= 0)
+            return BadRequest(new { message = "Сотрудник должен быть активным и иметь заполненную ставку в справочнике." });
+        var rate = emp.Rate;
+        var calendarHours = await GetWorkingHoursForMonth(month.Year, month.Month);
+        if (request.Hours < 0 || request.AllocationPercent < 0)
+            return BadRequest(new { message = "Загрузка не может быть отрицательной." });
+        if (request.Hours.HasValue && calendarHours == null)
+            return BadRequest(new { message = "Для месяца не загружена норма рабочего календаря. Введите процент от ставки; часы пока не рассчитываются." });
+        decimal ownPercent = request.Hours.HasValue
+            ? Math.Round(request.Hours.Value / (calendarHours!.Value * rate) * 100m, 6)
+            : request.AllocationPercent ?? 0m;
+        if (ownPercent <= 0 || ownPercent > 100m)
+            return BadRequest(new { message = "Введите загрузку больше 0 и не больше 100% от ставки сотрудника." });
+        var allocationPercent = Math.Round(ownPercent * rate, 2); // совместимость старого поля
+        var plannedHours = request.Hours ?? (calendarHours.HasValue ? Math.Round(calendarHours.Value * rate * ownPercent / 100m, 2) : (decimal?)null);
+        var capPercent = 100m;
 
         var existing = await _db.ResourceAllocations.FirstOrDefaultAsync(x =>
             x.EmployeeName == employee &&
@@ -475,21 +477,21 @@ public class ResourcePlanController : ControllerBase
             x.ActivityName == activityName &&
             x.PeriodStart == month);
 
-        var otherTotal = await _db.ResourceAllocations
+        var otherRows = await _db.ResourceAllocations.AsNoTracking()
             .Where(x => x.EmployeeName == employee && x.PeriodStart == month &&
                         (existing == null || x.ResourceAllocationId != existing.ResourceAllocationId))
-            .SumAsync(x => (decimal?)x.AllocationPercent) ?? 0m;
+            .ToListAsync();
+        var otherTotal = otherRows.Sum(x => ResourcePlanningMath.OwnPercent(x, rate) ?? 0m);
 
-        var newTotal = otherTotal + allocationPercent;
+        var newTotal = otherTotal + ownPercent;
 
-        if (newTotal > capPercent + 0.01m)
+        if (newTotal > capPercent + 0.000001m)
         {
             return BadRequest(new
             {
                 message =
                     $"Нельзя сохранить: суммарная загрузка «{employee}» за {month:MM.yyyy} " +
-                    $"составит {newTotal:0.##}%, это больше предела по ставке сотрудника " +
-                    $"({rate:0.##} ставки = {capPercent:0.##}%).",
+                    $"составит {newTotal:0.##}%. Допустимо не больше 100% от его ставки {rate:0.##}.",
                 totalPercent = newTotal,
                 capPercent
             });
@@ -510,7 +512,10 @@ public class ResourcePlanController : ControllerBase
                 ActivityName = activityName,
                 PeriodStart = month,
                 AllocationPercent = allocationPercent,
-                PlannedHours = request.Hours,
+                EmployeeAllocationPercent = ownPercent,
+                RateSnapshot = rate,
+                ProjectNameSnapshot = projectName,
+                PlannedHours = plannedHours,
                 CalendarHoursForMonth = calendarHours,
                 Comment = request.Comment?.Trim(),
                 CreatedAt = now,
@@ -525,7 +530,10 @@ public class ResourcePlanController : ControllerBase
         {
             existing.EmployeeLogin = request.EmployeeLogin?.Trim();
             existing.AllocationPercent = allocationPercent;
-            existing.PlannedHours = request.Hours;
+            existing.EmployeeAllocationPercent = ownPercent;
+            existing.RateSnapshot = rate;
+            existing.ProjectNameSnapshot = projectName;
+            existing.PlannedHours = plannedHours;
             existing.CalendarHoursForMonth = calendarHours;
             existing.Comment = request.Comment?.Trim();
             existing.UpdatedAt = now;
@@ -608,7 +616,7 @@ public class ResourcePlanController : ControllerBase
                 CsvValue(row.ProjectName),
                 CsvValue(row.ProjectStatus),
                 CsvValue(row.Department),
-                row.AllocationPercent.ToString("0.##", CultureInfo.InvariantCulture),
+                row.EmployeePercent?.ToString("0.######", CultureInfo.InvariantCulture) ?? string.Empty,
                 row.PlannedHours?.ToString("0.##", CultureInfo.InvariantCulture) ?? "",
                 CsvValue(row.Comment),
                 CsvValue(row.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss")),
@@ -658,7 +666,7 @@ public class ResourcePlanController : ControllerBase
             worksheet.Cell(rowIndex, 6).Value = row.ProjectName;
             worksheet.Cell(rowIndex, 7).Value = row.ProjectStatus;
             worksheet.Cell(rowIndex, 8).Value = row.Department;
-            worksheet.Cell(rowIndex, 9).Value = row.AllocationPercent;
+            if (row.EmployeePercent.HasValue) worksheet.Cell(rowIndex, 9).Value = row.EmployeePercent.Value;
             worksheet.Cell(rowIndex, 10).Value = row.PlannedHours;
             worksheet.Cell(rowIndex, 11).Value = row.Comment;
             worksheet.Cell(rowIndex, 12).Value = row.UpdatedAt;
@@ -737,6 +745,9 @@ public class ResourcePlanController : ControllerBase
         if (toMonth < fromMonth) (fromMonth, toMonth) = (toMonth, fromMonth);
 
         var projectMap = _data.GetAll().ToDictionary(p => p.ProjectId);
+        var rates = await _db.Employees.AsNoTracking().ToDictionaryAsync(e => e.FullName, e => e.Rate);
+        var calendar = (await _db.WorkCalendars.AsNoTracking().ToListAsync())
+            .ToDictionary(c => new DateOnly(c.Year, c.Month, 1), c => (decimal?)c.WorkingHours);
 
         var allocations = await _db.ResourceAllocations
             .AsNoTracking()
@@ -754,14 +765,16 @@ public class ResourcePlanController : ControllerBase
                 x.EmployeeLogin ?? string.Empty,
                 x.Kind,
                 x.ProjectId,
-                project?.Name ?? x.ActivityName ?? $"Проект #{x.ProjectId}",
+                project?.Name ?? x.ProjectNameSnapshot ?? x.ActivityName ?? $"Проект #{x.ProjectId}",
                 project?.Status ?? string.Empty,
                 project?.Department ?? string.Empty,
-                x.AllocationPercent,
-                x.PlannedHours,
+                ResourcePlanningMath.Fte(x) * 100m,
+                ResourcePlanningMath.Hours(x, calendar.GetValueOrDefault(x.PeriodStart)),
                 x.Comment ?? string.Empty,
                 x.UpdatedAt,
-                x.UpdatedBy ?? string.Empty);
+                x.UpdatedBy ?? string.Empty,
+                ResourcePlanningMath.OwnPercent(x, rates.GetValueOrDefault(x.EmployeeName)),
+                ResourcePlanningMath.Fte(x));
         }).ToList();
     }
 
@@ -802,4 +815,6 @@ public record ResourceExportRow(
     decimal? PlannedHours,
     string Comment,
     DateTime UpdatedAt,
-    string UpdatedBy);
+    string UpdatedBy,
+    decimal? EmployeePercent,
+    decimal PlannedFte);

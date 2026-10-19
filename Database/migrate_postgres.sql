@@ -202,6 +202,7 @@ ALTER TABLE dbo.Employees ALTER COLUMN CreatedAt TYPE TIMESTAMP;
 ALTER TABLE dbo.Employees ALTER COLUMN UpdatedAt TYPE TIMESTAMP;
 ALTER TABLE dbo.ResourceAllocations ALTER COLUMN CreatedAt TYPE TIMESTAMP;
 ALTER TABLE dbo.ResourceAllocations ALTER COLUMN UpdatedAt TYPE TIMESTAMP;
+ALTER TABLE dbo.WorkCalendars ADD COLUMN IF NOT EXISTS UpdatedAt TIMESTAMP NOT NULL DEFAULT NOW();
 ALTER TABLE dbo.WorkCalendars ALTER COLUMN UpdatedAt TYPE TIMESTAMP;
 ALTER TABLE dbo.PeriodLocks ALTER COLUMN UpdatedAt TYPE TIMESTAMP;
 ALTER TABLE dbo.ResourceAllocationAudits ALTER COLUMN ChangedAt TYPE TIMESTAMP;
@@ -219,3 +220,9 @@ CREATE TABLE IF NOT EXISTS dbo.feedback (
     isanonymous BOOLEAN NOT NULL
 );
 CREATE INDEX IF NOT EXISTS ix_feedback_createdat ON dbo.feedback (createdat);
+
+-- Явная шкала процентов и снимок ставки. Старые строки не переписываются.
+ALTER TABLE dbo.Employees ADD COLUMN IF NOT EXISTS EmployeeType VARCHAR(100);
+ALTER TABLE dbo.ResourceAllocations ADD COLUMN IF NOT EXISTS EmployeeAllocationPercent NUMERIC(12,6);
+ALTER TABLE dbo.ResourceAllocations ADD COLUMN IF NOT EXISTS RateSnapshot NUMERIC(8,4);
+ALTER TABLE dbo.ResourceAllocations ADD COLUMN IF NOT EXISTS ProjectNameSnapshot VARCHAR(1024);

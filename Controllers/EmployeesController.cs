@@ -97,8 +97,9 @@ public class EmployeesController : ControllerBase
             Login = dto.Login?.Trim(),
             Department = dto.Department?.Trim(),
             Sector = dto.Sector?.Trim(),
+            EmployeeType = dto.EmployeeType?.Trim(),
             ManagerFullName = dto.ManagerFullName?.Trim(),
-            Rate = dto.Rate <= 0 ? 1.00m : dto.Rate,
+            Rate = dto.Rate < 0 ? 0m : dto.Rate,
             IsActive = true,
             CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now,
@@ -120,6 +121,7 @@ public class EmployeesController : ControllerBase
 
         entity.Department = dto.Department?.Trim();
         entity.Sector = dto.Sector?.Trim();
+        entity.EmployeeType = dto.EmployeeType?.Trim() ?? entity.EmployeeType;
         entity.ManagerFullName = dto.ManagerFullName?.Trim();
         entity.Login = dto.Login?.Trim();
         entity.Rate = dto.Rate <= 0 ? entity.Rate : dto.Rate;
@@ -165,11 +167,13 @@ public class EmployeesController : ControllerBase
             var department = csv.GetField("Department")?.Trim();
             var sector = csv.GetField("Sector")?.Trim();
             var manager = csv.GetField("ManagerFullName")?.Trim();
+            var hasType = csv.HeaderRecord?.Contains("EmployeeType") == true;
+            var employeeType = hasType ? csv.GetField("EmployeeType")?.Trim() : null;
             var rateStr = csv.GetField("Rate")?.Trim();
             decimal.TryParse(rateStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate);
-            if (rate <= 0) rate = 1.00m;
-
             var entity = await _db.Employees.FirstOrDefaultAsync(e => e.FullName == fullName);
+            // Пустую/нечисловую ставку не заменяем единицей и не стираем известную.
+            if (rate <= 0) rate = entity?.Rate ?? 0m;
 
             if (entity == null)
             {
@@ -179,6 +183,7 @@ public class EmployeesController : ControllerBase
                     Login = login,
                     Department = department,
                     Sector = sector,
+                    EmployeeType = employeeType,
                     ManagerFullName = manager,
                     Rate = rate,
                     IsActive = true,
@@ -190,6 +195,7 @@ public class EmployeesController : ControllerBase
                 entity.Login = login;
                 entity.Department = department;
                 entity.Sector = sector;
+                if (hasType) entity.EmployeeType = employeeType;
                 entity.ManagerFullName = manager;
                 entity.Rate = rate;
                 entity.UpdatedAt = DateTime.Now;

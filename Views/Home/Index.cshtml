@@ -1988,16 +1988,16 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
 
     <div class="resource-field">
         <label for="resourceHours">Часы</label>
-        <input id="resourceHours" type="number" min="0" step="0.5"
-               placeholder="160" style="width:80px">
+        <input id="resourceHours" type="number" min="0" step="0.01"
+               placeholder="Часы" style="width:80px">
         <div class="resource-hours-hint" id="resourceHoursHint">или введите % ниже</div>
     </div>
 
     <div class="resource-field">
         <label for="resourcePercent">Загрузка, %</label>
-        <input id="resourcePercent" type="number" min="0" max="200" step="0.01"
+        <input id="resourcePercent" type="number" min="0" max="100" step="0.01"
                placeholder="25" style="width:80px">
-        <div class="resource-hours-hint" id="resourceCapHint">лимит: 100%</div>
+        <div class="resource-hours-hint" id="resourceCapHint">100% от ставки сотрудника</div>
     </div>
 
     <div class="resource-field">
@@ -2015,6 +2015,8 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         <select id="resourceTeamFilter" onchange="resourceLoadPlan()">
             <option value="">Все сотрудники</option>
         </select>
+        <select id="resourceDeptFilter" aria-label="Отдел" onchange="resourceLoadPlan()"><option value="">Все отделы</option></select>
+        <select id="resourceSectorFilter" aria-label="Сектор" onchange="resourceLoadPlan()"><option value="">Все секторы</option></select>
     </div>
 </div>
 
@@ -2085,6 +2087,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         type="button">
         Аналитика
     </button>
+    <button class="resource-analytics-btn" id="btnResourceMaster" type="button" onclick="ResourceMaster.open(BASE)">Мастер-план</button>
 </div>
 
 
@@ -2226,7 +2229,6 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
                 <th>Сотрудник</th>
                 <th>Отдел / Сектор</th>
                 <th>Ставка</th>
-                <th>Лимит</th>
                 <th>Итоговая загрузка</th>
                 <th>Статус</th>
             </tr>
@@ -2848,6 +2850,11 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
           <li><b>Сотрудник</b>, <b>Проект</b> (или Активность), <b>Часы</b> или <b>Лоадинг в %</b> — можно вводить любое из двух.</li>
           <li><b>Аналитика</b> — выберите период (от / до) и нажмите «Обновить». Показывает загрузку по проектам, сотрудникам и месяцам.</li>
           <li><b>Контроль заполнения</b> внизу — таблица по сотрудникам с итоговой загрузкой и статусом.</li>
+          <li><b>Проценты от ставки:</b> 100% означают всю норму сотрудника. При ставке 0,25 и норме полного месяца 160 часов загрузка 50% равна 20 часам и 0,125 FTE.</li>
+          <li><b>Календарь:</b> часы рассчитываются только при загруженной норме месяца. Без нормы можно заполнять проценты; предполагаемые 160 часов не подставляются.</li>
+          <li><b>Мастер-план:</b> выберите до 24 месяцев и фильтры по отделу, сектору, руководителю или типу специалиста. Показаны все активные записи справочника, включая сотрудников без назначений.</li>
+          <li><b>Свободные ресурсы:</b> ставка минус запланированные FTE. Ноль означает полную загрузку; отрицательное значение означает превышение. Проекты, операционная деятельность и отпуск расходуют доступную норму.</li>
+          <li><b>План по проектам:</b> переключайте FTE/часы, выбирайте месяц сортировки и сотрудника. Нажмите название проекта для распределения по людям. Отсутствующая норма часов обозначена прочерком.</li>
           <li><b>Блокировки</b> — закрывают период для всех, по отделу или по сектору от редактирования.</li>
           <li><b>История</b> — журнал всех внесений и корректировок.</li>
           <li><b>Скачать CSV/Excel</b> — экспорт текущего среза.</li>
@@ -5440,28 +5447,47 @@ async function resourceLoadReference() {
     )].sort((a,b) => a.localeCompare(b, 'ru'));
     teamSelect.innerHTML = '<option value="">Все сотрудники</option>' +
         managers.map(m => `<option value="${resourceEscape(m)}">${resourceEscape(m)} (моя команда)</option>`).join('');
+    for (const [id, values, caption] of [
+        ['resourceDeptFilter', resourceEmployees.map(e=>e.department), 'Все отделы'],
+        ['resourceSectorFilter', resourceEmployees.map(e=>e.sector || e.department), 'Все секторы']
+    ]) {
+        document.getElementById(id).innerHTML = `<option value="">${caption}</option>` +
+            [...new Set(values.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'))
+            .map(v=>`<option value="${resourceEscape(v)}">${resourceEscape(v)}</option>`).join('');
+    }
 
     resourceReferenceLoaded = true;
 }
 
-function resourceUpdateCapHint() {
+let resourceInputMode = 'percent';
+function resourceInputNorm() {
     const name = document.getElementById('resourceEmployee').value;
-    const emp = resourceEmployees.find(e =>
-        e.name.toLowerCase() === name.toLowerCase());
-    const cap = emp ? emp.capPercent : 100;
-    const rate = emp ? emp.rate : 1;
+    const emp = resourceEmployees.find(e => e.name.toLowerCase() === name.toLowerCase());
+    return emp?.rate > 0 && window.resourceCalendarHours > 0 ? emp.rate * window.resourceCalendarHours : null;
+}
+function resourceUpdateCapHint() {
+    const norm = resourceInputNorm();
     document.getElementById('resourceCapHint').textContent =
-        `лимит: ${cap.toLocaleString('ru-RU')}% (ставка ${rate})`;
+        norm ? `100% от ставки = ${norm.toLocaleString('ru-RU')} ч.` : '100% от ставки сотрудника';
+    document.getElementById('resourceHoursHint').textContent =
+        norm ? 'или введите процент от ставки' : 'Для часов выберите сотрудника; в календаре должна быть норма месяца';
+    if (resourceInputMode === 'hours') resourceHoursToPercent();
+    else resourcePercentToHours();
 }
 
-// При вводе часов — автоматически считаем %
 function resourceHoursToPercent() {
+    resourceInputMode = 'hours';
     const hours = parseFloat(document.getElementById('resourceHours').value);
-    if (!hours || hours <= 0) return;
-    // Используем CalendarHoursForMonth из последнего загруженного плана, либо 160 как фолбэк
-    const calendarHours = window.resourceCalendarHours || 160;
-    const percent = (hours / calendarHours * 100).toFixed(2);
-    document.getElementById('resourcePercent').value = percent;
+    const norm = resourceInputNorm();
+    document.getElementById('resourcePercent').value =
+        norm && Number.isFinite(hours) ? String(Number((hours / norm * 100).toFixed(6))) : '';
+}
+function resourcePercentToHours() {
+    resourceInputMode = 'percent';
+    const percent = parseFloat(document.getElementById('resourcePercent').value);
+    const norm = resourceInputNorm();
+    document.getElementById('resourceHours').value =
+        norm && Number.isFinite(percent) ? String(Number((percent / 100 * norm).toFixed(2))) : '';
 }
 
 function resourceProjectName(projectId) {
@@ -5474,10 +5500,8 @@ function resourceProjectName(projectId) {
 function resourceRenderPlan(data) {
     window.resourcePlanData = data;
 
-    // Сохраняем норму часов для пересчёта часы→%
-    if (data.items && data.items.length > 0 && data.items[0].plannedHours != null) {
-        window.resourceCalendarHours = data.items[0].calendarHoursForMonth || 160;
-    }
+    window.resourceCalendarHours = data.calendarHours ?? null;
+    resourceUpdateCapHint();
 
     const summary = document.getElementById('resourceSummary');
     const controlTbody = document.getElementById('resourceControlTbody');
@@ -5512,7 +5536,7 @@ function resourceRenderPlan(data) {
 
     if (!visibleEmployees.length) {
         controlTbody.innerHTML =
-            '<tr><td class="resource-empty" colspan="6">' +
+            '<tr><td class="resource-empty" colspan="5">' +
             'Сотрудники не найдены.' +
             '</td></tr>';
         return;
@@ -5521,10 +5545,10 @@ function resourceRenderPlan(data) {
     controlTbody.innerHTML = visibleEmployees.map(emp => {
         const total = Number(emp.totalPercent);
         const cap = Number(emp.capPercent || 100);
-        const rate = Number(emp.rate || 1);
+        const rate = Number(emp.rate ?? 0);
         const statusClass =
             emp.status === 'Заполнено' ? 'full'
-            : emp.status === 'Частично заполнено' ? 'partial' : 'empty';
+            : emp.status === 'Частично заполнено' ? 'partial' : emp.status === 'Превышение' ? 'overload' : 'empty';
 
         return `
     <tr class="resource-control-row"
@@ -5535,9 +5559,8 @@ function resourceRenderPlan(data) {
             <button class="resource-preview-btn" onclick="event.stopPropagation();resourceOpenHistory('${resourceEscape(emp.employeeName).replace(/'/g, '&#39;')}')" title="История">📜</button>
         </td>
         <td style="font-size:12px;color:#6B7280">${resourceEscape(emp.department || '—')} / ${resourceEscape(emp.sector || '—')}</td>
-        <td><b>${rate.toLocaleString('ru-RU')}</b></td>
-        <td style="font-size:12px;color:#6B7280">${cap.toLocaleString('ru-RU')}%</td>
-        <td><b>${total.toLocaleString('ru-RU')}%</b></td>
+        <td><b>${rate > 0 ? rate.toLocaleString('ru-RU') : 'Не указана'}</b></td>
+        <td><b>${rate > 0 ? total.toLocaleString('ru-RU') + '%' : '—'}</b></td>
         <td>
             <span class="resource-status ${statusClass}">${resourceEscape(emp.status)}</span>
         </td>
@@ -5553,6 +5576,10 @@ async function resourceLoadPlan() {
     let url = resourceApiUrl(`?period=${encodeURIComponent(period)}`);
     if (teamFilter) {
         url += `&managerFullName=${encodeURIComponent(teamFilter)}`;
+    }
+    for (const [id,key] of [['resourceDeptFilter','department'],['resourceSectorFilter','sector']]) {
+        const value = document.getElementById(id).value;
+        if (value) url += `&${key}=${encodeURIComponent(value)}`;
     }
 
     const response = await fetch(url);
@@ -5625,7 +5652,7 @@ async function resourceSave() {
     const kind = resourceCurrentKind;
     const periodStart = resourceMonthToApiValue();
     const comment = document.getElementById('resourceComment').value.trim();
-    const hours = parseFloat(document.getElementById('resourceHours').value) || null;
+    const hours = resourceInputMode === 'hours' ? (parseFloat(document.getElementById('resourceHours').value) || null) : null;
     const allocationPercent = parseFloat(document.getElementById('resourcePercent').value) || 0;
     const button = document.getElementById('btnResourceSave');
 
@@ -5788,7 +5815,7 @@ function resourceSelectEmployee(employeeName) {
                 </div>
             </div>
             <div class="resource-person-percent">
-                ${Number(item.allocationPercent).toLocaleString('ru-RU')}%
+                ${item.allocationPercent == null ? '—' : Number(item.allocationPercent).toLocaleString('ru-RU') + '%'}
             </div>
             <div class="resource-person-actions">
                 <button class="resource-person-edit" type="button"
@@ -5844,6 +5871,7 @@ function resourceEditAllocation(id) {
 
     document.getElementById('resourcePercent').value = item.allocationPercent;
     document.getElementById('resourceHours').value = item.plannedHours || '';
+    resourceInputMode = 'percent';
     document.getElementById('resourceComment').value = item.comment || '';
 
     resourceClosePerson();
@@ -5973,10 +6001,10 @@ async function resourceOpenHistory(employeeName) {
 
         tbody.innerHTML = rows.map(r => `
             <tr>
-                <td>${resourceFormatDate(r.periodStart)}</td>
+                <td>${resourceFormatMonth(r.periodStart)}</td>
                 <td>${resourceEscape(r.kind || 'Project')}</td>
                 <td>${resourceEscape(r.projectName || '—')}</td>
-                <td><b>${Number(r.allocationPercent || 0).toLocaleString('ru-RU')}%</b></td>
+                <td><b>${r.allocationPercent == null ? '—' : Number(r.allocationPercent).toLocaleString('ru-RU') + '%'}</b></td>
                 <td>${r.plannedHours ? Number(r.plannedHours).toLocaleString('ru-RU') + ' ч.' : '—'}</td>
                 <td>${resourceEscape(r.comment || '—')}</td>
                 <td style="font-size:11px;color:#6B7280">${resourceEscape(r.updatedBy || '—')}<br>${resourceFormatDate(r.updatedAt)}</td>
@@ -6067,6 +6095,7 @@ async function resourceSetLock(isOpen) {
 
 // Подключение обработчиков на input часов — автопересчёт %
 document.getElementById('resourceHours')?.addEventListener('input', resourceHoursToPercent);
+document.getElementById('resourcePercent')?.addEventListener('input', resourcePercentToHours);
 
 // Кнопки истории и блокировок
 document.getElementById('btnResourceHistory')?.addEventListener('click', () => {
@@ -6284,6 +6313,38 @@ document.getElementById("btnResourceAnalyticsLoad")
         </table>
     </div>
 </div>
+
+<link rel="stylesheet" href="@Url.Content("~/css/resource-master.css")?v=1">
+<dialog id="masterDialog" aria-labelledby="masterTitle">
+  <div class="mp-header"><h2 id="masterTitle">Мастер-план</h2><button id="masterClose" class="resource-analytics-btn" type="button">Закрыть</button></div>
+  <div class="mp-body">
+    <p class="mp-note">100% загрузки = вся норма индивидуальной ставки. FTE = ставка × загрузка / 100. Свободный ресурс = ставка − занятые FTE.</p>
+    <div class="mp-filters">
+      <label>С месяца<input id="masterFrom" type="month"></label>
+      <label>По месяц<input id="masterTo" type="month"></label>
+      <label>Тип специалиста<select id="masterType"><option value="">Все</option></select></label>
+      <label>Отдел<select id="masterDept"><option value="">Все</option></select></label>
+      <label>Сектор / отдел<select id="masterSector"><option value="">Все</option></select></label>
+      <label>Руководитель<select id="masterManager"><option value="">Все</option></select></label>
+      <button type="button" id="masterLoad" class="resource-analytics-btn">Показать</button>
+    </div>
+    <div id="masterMessage" class="mp-note" role="status" aria-live="polite"></div>
+    <div class="mp-filters"><label>Месяц итогов и сортировки<select id="masterSort"></select></label></div>
+    <div id="masterCardsPeriod" class="mp-note"></div><div id="masterCards" class="mp-cards"></div>
+    <h3 class="mp-section">Свободные ресурсы в FTE</h3>
+    <p class="mp-note">Положительное значение: свободная ёмкость. Ноль: полностью занят. Отрицательное: превышение. Прочерк: недостаточно данных.</p>
+    <div class="mp-scroll"><table id="masterResources" class="mp-table" aria-label="Свободные ресурсы по месяцам"></table></div>
+    <h3 class="mp-section">План по проектам и видам деятельности</h3>
+    <div class="mp-filters">
+      <label>Единицы<select id="masterUnit"><option value="fte">FTE</option><option value="hours">Часы</option></select></label>
+      <label>Сотрудник в распределении<select id="masterEmployee"><option value="">Все</option></select></label>
+    </div>
+    <p id="masterSortNote" class="mp-note"></p>
+    <div class="mp-scroll"><table id="masterProjects" class="mp-table" aria-label="Плановые трудозатраты по проектам"></table></div>
+    <p id="masterWarnings" class="mp-note"></p>
+  </div>
+</dialog>
+<script src="@Url.Content("~/js/resource-master.js")?v=1"></script>
 
 <!-- Модальное окно: Превью документа -->
 <div class="file-preview-modal" id="filePreviewModal" role="dialog" aria-modal="true" aria-labelledby="filePreviewName">
