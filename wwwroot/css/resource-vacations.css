@@ -1,0 +1,17 @@
+.vacation-panel { margin:12px 16px; padding:16px; border:1px solid #cbd5e1; background:#f8fafc; border-radius:12px; color:#334155; font-size:13px; }
+.vacation-panel[hidden] { display:none; }
+.vacation-panel p { line-height:1.5; max-width:850px; }
+.vacation-panel h3 { font-size:14px; margin:16px 0 8px; }
+.vacation-fields { display:flex; flex-wrap:wrap; gap:12px; align-items:end; margin-bottom:12px; }
+.vacation-fields label { display:grid; gap:6px; }
+.vacation-panel input[type=date], .vacation-panel button { padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; background:white; color:#334155; }
+.vacation-panel button { cursor:pointer; }
+.vacation-panel button:disabled { opacity:.5; cursor:wait; }
+.vacation-panel button:focus-visible,.vacation-panel input:focus-visible { outline:2px solid #6366f1; outline-offset:2px; }
+.vacation-entry { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid #e2e8f0; }
+.vacation-entry span { flex:1; min-width:180px; }
+#vacationCalculation { white-space:pre-line; line-height:1.6; }
+.resource-field input[type=search] { width:100%; min-width:0; box-sizing:border-box; margin-bottom:4px; }
+.resource-team-filter { flex-wrap:wrap; max-width:100%; }
+.resource-team-filter select { max-width:100%; }
+@media(max-width:600px) { .vacation-panel { margin:8px; padding:12px; } .vacation-fields label { flex:1; min-width:130px; } }

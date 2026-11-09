@@ -1965,6 +1965,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
 
     <div class="resource-field">
         <label for="resourceEmployee">Сотрудник</label>
+        <input id="resourceEmployeeSearch" type="search" placeholder="Поиск по имени" aria-label="Поиск сотрудника" oninput="resourceSearchOptions('employee')">
         <select id="resourceEmployee">
             <option value="">Выберите сотрудника</option>
         </select>
@@ -1973,6 +1974,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
     <!-- Проект (только для Kind=Project) -->
     <div class="resource-field" id="resourceProjectField">
         <label for="resourceProject">Проект</label>
+        <input id="resourceProjectSearch" type="search" placeholder="Название или ID проекта" aria-label="Поиск проекта" oninput="resourceSearchOptions('project')">
         <select id="resourceProject">
             <option value="">Выберите проект</option>
         </select>
@@ -2017,10 +2019,24 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         </select>
         <select id="resourceDeptFilter" aria-label="Отдел" onchange="resourceLoadPlan()"><option value="">Все отделы</option></select>
         <select id="resourceSectorFilter" aria-label="Сектор" onchange="resourceLoadPlan()"><option value="">Все секторы</option></select>
+        <select id="resourceTypeFilter" aria-label="Тип сотрудника" onchange="resourceLoadPlan()"><option value="">Все типы сотрудников</option></select>
     </div>
 </div>
 
 <!-- Панель блокировки периодов -->
+<div id="vacationDatesPanel" hidden class="vacation-panel">
+    <label><input type="checkbox" id="vacationByDates" checked> Рассчитать отпуск по датам</label>
+    <p>Даты включительно. Учитываются часы календаря 1С/Qlik: выходные и праздники, сокращённые дни и рабочие субботы. Это расчёт загрузки, а не отпускных выплат.</p>
+    <div class="vacation-fields">
+        <label>Начало <input id="vacationStart" type="date"></label>
+        <label>Окончание <input id="vacationEnd" type="date"></label>
+        <button type="button" id="vacationCalculate">Рассчитать</button>
+        <button type="button" id="vacationNew">Новый отпуск</button>
+    </div>
+    <div id="vacationCalculation" role="status" aria-live="polite">Выберите сотрудника и даты. Для сохранения используйте кнопку «Сохранить».</div>
+    <h3>Сохранённые отпуска выбранного сотрудника</h3>
+    <div id="vacationList"></div>
+</div>
 <div class="resource-lock-panel" id="resourceLockPanel">
     <span style="font-size:12px;font-weight:600;color:#92400E">Блокировка периода:</span>
     <select id="resourceLockGroup">
@@ -2077,6 +2093,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
     <button
         class="resource-lock-btn"
         id="btnResourceLock"
+        style="display:none"
         type="button">
         🔒 Блокировки
     </button>
@@ -2848,6 +2865,9 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         <ul>
           <li><b>Месяц</b> и <b>вид деятельности</b> (Проект / Операционная / Отпуск) — выбираются в верхней панели.</li>
           <li><b>Сотрудник</b>, <b>Проект</b> (или Активность), <b>Часы</b> или <b>Лоадинг в %</b> — можно вводить любое из двух.</li>
+          <li><b>Поиск:</b> над списками сотрудников и проектов есть поле поиска. Проект можно найти по названию или ID. В контроле заполнения добавлен фильтр по типу сотрудника.</li>
+          <li><b>Отпуск по датам:</b> выберите сотрудника, «Отпуск» и даты начала/окончания включительно, затем «Рассчитать» и «Сохранить». Часы и проценты распределяются по месяцам с учётом ставки. В списке отпусков можно изменить даты или удалить весь период. Пересечение отпусков, закрытые месяцы и загрузка больше 100% не допускаются.</li>
+          <li><b>Выходные и переносы:</b> используются дневные нормы того же календаря 1С, что и в Qlik. Нужна полная выгрузка каждого затронутого месяца. Без неё отпуск по датам не сохраняется; обычные проценты можно вносить вручную. Старые записи без дат не пересчитываются автоматически.</li>
           <li><b>Аналитика</b> — выберите период (от / до) и нажмите «Обновить». Показывает загрузку по проектам, сотрудникам и месяцам.</li>
           <li><b>Контроль заполнения</b> внизу — таблица по сотрудникам с итоговой загрузкой и статусом.</li>
           <li><b>Проценты от ставки:</b> 100% означают всю норму сотрудника. При ставке 0,25 и норме полного месяца 160 часов загрузка 50% равна 20 часам и 0,125 FTE.</li>
@@ -2856,6 +2876,7 @@ code{background:#F3F4F6;padding:1px 5px;border-radius:3px;font-size:12px;color:#
           <li><b>Свободные ресурсы:</b> ставка минус запланированные FTE. Ноль означает полную загрузку; отрицательное значение означает превышение. Проекты, операционная деятельность и отпуск расходуют доступную норму.</li>
           <li><b>План по проектам:</b> переключайте FTE/часы, выбирайте месяц сортировки и сотрудника. Нажмите название проекта для распределения по людям. Отсутствующая норма часов обозначена прочерком.</li>
           <li><b>Блокировки</b> — закрывают период для всех, по отделу или по сектору от редактирования.</li>
+          <li><b>Ответственные за периоды:</b> кнопка блокировок доступна только назначенным пользователям после личного входа. Список ответственных меняется в настройках приложения. На тестовом стенде без личного входа управление закрыто.</li>
           <li><b>История</b> — журнал всех внесений и корректировок.</li>
           <li><b>Скачать CSV/Excel</b> — экспорт текущего среза.</li>
         </ul>
@@ -5402,6 +5423,7 @@ function resourceSetKind(kind) {
         ).join('');
         if (items.length > 0) sel.value = items[0].code;
     }
+    window.ResourceVacation?.refreshMode();
 }
 
 async function resourceLoadReference() {
@@ -5449,7 +5471,8 @@ async function resourceLoadReference() {
         managers.map(m => `<option value="${resourceEscape(m)}">${resourceEscape(m)} (моя команда)</option>`).join('');
     for (const [id, values, caption] of [
         ['resourceDeptFilter', resourceEmployees.map(e=>e.department), 'Все отделы'],
-        ['resourceSectorFilter', resourceEmployees.map(e=>e.sector || e.department), 'Все секторы']
+        ['resourceSectorFilter', resourceEmployees.map(e=>e.sector || e.department), 'Все секторы'],
+        ['resourceTypeFilter', resourceEmployees.map(e=>e.employeeType), 'Все типы сотрудников']
     ]) {
         document.getElementById(id).innerHTML = `<option value="">${caption}</option>` +
             [...new Set(values.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'))
@@ -5499,6 +5522,8 @@ function resourceProjectName(projectId) {
 
 function resourceRenderPlan(data) {
     window.resourcePlanData = data;
+    document.getElementById('btnResourceLock').style.display = data.canManagePeriods ? '' : 'none';
+    if (!data.canManagePeriods) document.getElementById('resourceLockPanel').classList.remove('open');
 
     window.resourceCalendarHours = data.calendarHours ?? null;
     resourceUpdateCapHint();
@@ -5577,7 +5602,7 @@ async function resourceLoadPlan() {
     if (teamFilter) {
         url += `&managerFullName=${encodeURIComponent(teamFilter)}`;
     }
-    for (const [id,key] of [['resourceDeptFilter','department'],['resourceSectorFilter','sector']]) {
+    for (const [id,key] of [['resourceDeptFilter','department'],['resourceSectorFilter','sector'],['resourceTypeFilter','employeeType']]) {
         const value = document.getElementById(id).value;
         if (value) url += `&${key}=${encodeURIComponent(value)}`;
     }
@@ -5648,6 +5673,7 @@ function resourceShowMain() {
 }
 
 async function resourceSave() {
+    if (window.ResourceVacation?.active()) return window.ResourceVacation.save();
     const employeeName = document.getElementById('resourceEmployee').value;
     const kind = resourceCurrentKind;
     const periodStart = resourceMonthToApiValue();
@@ -5725,6 +5751,13 @@ async function resourceSave() {
 }
 
 async function resourceDeleteAllocation(id) {
+    const dated = (window.resourcePlanData?.items || []).find(x => Number(x.id) === Number(id) && x.vacationPeriodId);
+    if (dated) {
+        resourceClosePerson();
+        await window.ResourceVacation.editById(dated.employeeName, dated.vacationPeriodId);
+        resourceShowMessage('Отпуск удаляется целиком кнопкой «Удалить весь отпуск» в списке отпусков.', 'ok');
+        return;
+    }
     if (!window.confirm('Удалить это назначение?')) return;
 
     try {
@@ -5838,7 +5871,10 @@ function resourceAddForPerson() {
     const panel = document.getElementById('resourcePersonPanel');
     const employeeName = panel.dataset.employeeName || '';
 
+    document.getElementById('resourceEmployeeSearch').value = '';
+    resourceSearchOptions('employee');
     document.getElementById('resourceEmployee').value = employeeName;
+    document.getElementById('resourceEmployee').dispatchEvent(new Event('change'));
     resourceClosePerson();
 
     document.querySelector('.resource-toolbar')
@@ -5857,13 +5893,28 @@ function resourceEditAllocation(id) {
         return;
     }
 
+    if (item.vacationPeriodId) {
+        resourceClosePerson();
+        window.ResourceVacation.editById(item.employeeName, item.vacationPeriodId);
+        return;
+    }
+
+    document.getElementById('resourceEmployeeSearch').value = '';
+    resourceSearchOptions('employee');
     document.getElementById('resourceEmployee').value = item.employeeName;
+    document.getElementById('resourceEmployee').dispatchEvent(new Event('change'));
     resourceUpdateCapHint();
 
     const kind = item.kind || 'Project';
     resourceSetKind(kind);
+    if (kind === 'Vacation') {
+        document.getElementById('vacationByDates').checked = false;
+        window.ResourceVacation.refreshMode();
+    }
 
     if (kind === 'Project' && item.projectId) {
+        document.getElementById('resourceProjectSearch').value = '';
+        resourceSearchOptions('project');
         document.getElementById('resourceProject').value = String(item.projectId);
     } else {
         document.getElementById('resourceActivity').value = item.activityName || '';
@@ -5886,8 +5937,10 @@ function resourceEditAllocation(id) {
 }
 
 async function resourceDeleteFromPanel(id) {
-    if (!confirm('Удалить это назначение?')) return;
-
+    if ((window.resourcePlanData?.items || []).some(x => Number(x.id) === Number(id) && x.vacationPeriodId)) {
+        await resourceDeleteAllocation(id);
+        return;
+    }
     await resourceDeleteAllocation(id);
 
     const panel = document.getElementById('resourcePersonPanel');
@@ -6345,6 +6398,8 @@ document.getElementById("btnResourceAnalyticsLoad")
   </div>
 </dialog>
 <script src="@Url.Content("~/js/resource-master.js")?v=1"></script>
+<link rel="stylesheet" href="@Url.Content("~/css/resource-vacations.css")?v=1">
+<script src="@Url.Content("~/js/resource-vacations.js")?v=1"></script>
 
 <!-- Модальное окно: Превью документа -->
 <div class="file-preview-modal" id="filePreviewModal" role="dialog" aria-modal="true" aria-labelledby="filePreviewName">
@@ -6367,6 +6422,7 @@ document.getElementById("btnResourceAnalyticsLoad")
   <div class="fb-header"><h2 id="feedbackTitle">Обратная связь</h2><button class="fb-close" id="feedbackClose" aria-label="Закрыть обратную связь" type="button">&times;</button></div>
   <div class="fb-body">
     <p id="feedbackNotice" class="fb-notice"></p>
+    <p class="fb-hint">Здесь можно сообщить об ошибке, задать вопрос или предложить улучшение самого Навигатора. Форма не заменяет заявки в Service Desk. При необходимости вставьте ссылку на файл.</p>
     <div class="fb-tabs" role="tablist" aria-label="Разделы обратной связи">
       <button class="fb-button" id="feedbackWriteTab" role="tab" aria-selected="true" aria-controls="feedbackFormPanel">Написать</button>
       <button class="fb-button" id="feedbackInboxTab" role="tab" aria-selected="false" aria-controls="feedbackInboxPanel">Обращения</button>
@@ -6398,7 +6454,7 @@ document.getElementById("btnResourceAnalyticsLoad")
     </section>
   </div>
 </dialog>
-<script src="@Url.Content("~/js/feedback.js")?v=1"></script>
+<script src="@Url.Content("~/js/feedback.js")?v=2"></script>
 <dialog id="pmoTour" aria-labelledby="tourTitle" aria-describedby="tourText">
   <div class="tour-highlight" id="tourHighlight" aria-hidden="true"></div>
   <div class="tour-bubble" id="tourBubble">

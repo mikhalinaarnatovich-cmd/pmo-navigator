@@ -16,6 +16,7 @@ public class PmoDbContext : DbContext
     public DbSet<PeriodLockEntity> PeriodLocks => Set<PeriodLockEntity>();
     public DbSet<ResourceAllocationAuditEntity> ResourceAllocationAudits => Set<ResourceAllocationAuditEntity>();
     public DbSet<FeedbackEntry> FeedbackEntries => Set<FeedbackEntry>();
+    public DbSet<VacationPeriod> VacationPeriods => Set<VacationPeriod>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -157,6 +158,19 @@ public class PmoDbContext : DbContext
             entity.Property(x => x.AuthorLogin).HasMaxLength(256);
         });
 
+        modelBuilder.Entity<VacationPeriod>(entity =>
+        {
+            entity.ToTable("VacationPeriods", "dbo");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.EmployeeName).HasMaxLength(256);
+            entity.Property(x => x.Comment).HasMaxLength(2000);
+            entity.Property(x => x.CalendarVersion).HasMaxLength(64);
+            entity.Property(x => x.RateSnapshot).HasPrecision(8, 4);
+            entity.Property(x => x.Revision).IsConcurrencyToken();
+            entity.HasIndex(x => new { x.EmployeeName, x.StartDate, x.EndDate });
+        });
+        modelBuilder.Entity<ResourceAllocationEntity>().HasIndex(x => x.VacationPeriodId);
+
         // ── Приводим все имена таблиц/колонок к нижнему регистру ─────────
         // PostgreSQL фолдит неэкранированные идентификаторы в lower-case.
         // Наша raw-SQL миграция (migrate_postgres.sql) создаёт таблицы БЕЗ
@@ -182,6 +196,7 @@ public class PmoDbContext : DbContext
 
 public class ResourceAllocationEntity
 {
+    public Guid? VacationPeriodId { get; set; }
     public long ResourceAllocationId { get; set; }
 
     public string EmployeeName { get; set; } = "";
@@ -223,6 +238,21 @@ public class ResourceAllocationEntity
 
     public DateTime UpdatedAt { get; set; }
 
+    public string? UpdatedBy { get; set; }
+}
+
+public class VacationPeriod
+{
+    public Guid Id { get; set; }
+    public string EmployeeName { get; set; } = "";
+    public DateOnly StartDate { get; set; }
+    public DateOnly EndDate { get; set; }
+    public decimal RateSnapshot { get; set; }
+    public string CalendarVersion { get; set; } = "";
+    public string? Comment { get; set; }
+    public int Revision { get; set; }
+    public bool Cancelled { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public string? UpdatedBy { get; set; }
 }
 

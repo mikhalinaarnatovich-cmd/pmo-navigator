@@ -9,7 +9,7 @@
 
   <ItemGroup>
 	  <PackageReference Include="ClosedXML" Version="0.104.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="8.0.33" />
     <PackageReference Include="CsvHelper" Version="33.0.1" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
 
@@ -37,6 +37,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Database/resource_master_mssql.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Database/calendar_mssql.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Database/calendar-and-access.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="wwwroot/data/**">

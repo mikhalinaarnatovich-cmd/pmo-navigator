@@ -11,7 +11,8 @@ public class ResourceMasterController : ControllerBase
 {
     private readonly PmoDbContext _db;
     private readonly IDataService _data;
-    public ResourceMasterController(PmoDbContext db, IDataService data) { _db = db; _data = data; }
+    private readonly DailyWorkCalendar _calendar;
+    public ResourceMasterController(PmoDbContext db, IDataService data, DailyWorkCalendar calendar) { _db = db; _data = data; _calendar = calendar; }
 
     [HttpGet]
     public async Task<IActionResult> Get([FromQuery] DateOnly? from, [FromQuery] DateOnly? to,
@@ -37,9 +38,8 @@ public class ResourceMasterController : ControllerBase
         var allRows = await _db.ResourceAllocations.AsNoTracking()
             .Where(x => x.PeriodStart >= start && x.PeriodStart <= end).ToListAsync(ct);
         var rows = allRows.Where(x => names.Contains(x.EmployeeName)).ToList();
-        var calendar = (await _db.WorkCalendars.AsNoTracking()
-            .Where(x => x.Year >= start.Year && x.Year <= end.Year).ToListAsync(ct))
-            .ToDictionary(x => new DateOnly(x.Year, x.Month, 1), x => x.WorkingHours > 0 ? (decimal?)x.WorkingHours : null);
+        var snapshot = _calendar.Read();
+        var calendar = periods.ToDictionary(x => x, snapshot.MonthHours);
         var employeeMap = scope.ToDictionary(x => x.FullName, StringComparer.OrdinalIgnoreCase);
         var projects = _data.GetAll().ToDictionary(x => x.ProjectId);
         var assignments = rows.Select(row => new

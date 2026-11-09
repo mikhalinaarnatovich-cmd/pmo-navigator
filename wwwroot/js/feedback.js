@@ -53,6 +53,7 @@
                 ? 'Определено по рабочей учётной записи.' : 'Необязательно. В тестовом режиме имя не подтверждается.';
             $('feedbackSend').disabled = !access.canSubmit || submitting;
             $('feedbackExport').disabled = !access.canReview;
+            $('feedbackInboxTab').hidden = !access.canReview;
             if (!access.canSubmit) status('Для отправки войдите под рабочей учётной записью.', 'error');
             if (!$('feedbackInboxPanel').hidden) loadList();
         } catch (error) { access = null; status(error.message, 'error'); }

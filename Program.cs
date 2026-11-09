@@ -45,6 +45,8 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddSingleton<DataService>();
 builder.Services.AddSingleton<IDataService>(sp => sp.GetRequiredService<DataService>());
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddSingleton<DailyWorkCalendar>();
+builder.Services.AddScoped<NavigatorPermissions>();
 
 // ── Получаем строку подключения ────────────────────────────────────
 // Поддерживаем два формата:

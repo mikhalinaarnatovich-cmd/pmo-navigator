@@ -17,15 +17,19 @@ public class ResourcePlanController : ControllerBase
     private readonly PmoDbContext _db;
     private readonly IDataService _data;
     private readonly ICurrentUserService _user;
+    private readonly DailyWorkCalendar _calendar;
+    private readonly NavigatorPermissions _permissions;
 
     public ResourcePlanController(
         PmoDbContext db,
         IDataService data,
-        ICurrentUserService user)
+        ICurrentUserService user, DailyWorkCalendar calendar, NavigatorPermissions permissions)
     {
         _db = db;
         _data = data;
         _user = user;
+        _calendar = calendar;
+        _permissions = permissions;
     }
 
     // ── Фиксированные справочники "не проектной" деятельности ───────────
@@ -110,7 +114,7 @@ public class ResourcePlanController : ControllerBase
         [FromQuery] DateOnly? period,
         [FromQuery] string? managerFullName,
         [FromQuery] string? department,
-        [FromQuery] string? sector)
+        [FromQuery] string? sector, [FromQuery] string? employeeType)
     {
         var month = GetMonthStart(period);
 
@@ -137,6 +141,8 @@ public class ResourcePlanController : ControllerBase
             scoped = scoped.Where(e => e.Department == department);
         if (!string.IsNullOrWhiteSpace(sector))
             scoped = scoped.Where(e => (string.IsNullOrWhiteSpace(e.Sector) ? e.Department : e.Sector) == sector);
+        if (!string.IsNullOrWhiteSpace(employeeType))
+            scoped = scoped.Where(e => e.EmployeeType == employeeType);
 
         var employeeNames = scoped
             .Select(e => e.FullName)
@@ -150,7 +156,7 @@ public class ResourcePlanController : ControllerBase
         var calendarHours = await GetWorkingHoursForMonth(month.Year, month.Month);
         var items = allocations.Select(x => new
         {
-            id = x.ResourceAllocationId, employeeName = x.EmployeeName, employeeLogin = x.EmployeeLogin,
+            id = x.ResourceAllocationId, vacationPeriodId = x.VacationPeriodId, employeeName = x.EmployeeName, employeeLogin = x.EmployeeLogin,
             kind = x.Kind, projectId = x.ProjectId, activityName = x.ActivityName, periodStart = x.PeriodStart,
             allocationPercent = ResourcePlanningMath.OwnPercent(x, directoryByName.GetValueOrDefault(x.EmployeeName)?.Rate ?? 0m),
             fullTimePercent = ResourcePlanningMath.Fte(x) * 100m,
@@ -217,6 +223,7 @@ public class ResourcePlanController : ControllerBase
             summary,
             locks,
             calendarHours,
+            canManagePeriods = _permissions.ManagePeriods,
         });
     }
 
@@ -239,6 +246,7 @@ public class ResourcePlanController : ControllerBase
         var projectMap = _data.GetAll().ToDictionary(p => p.ProjectId);
         var employeeRate = await _db.Employees.AsNoTracking().Where(e => e.FullName == employee.Trim())
             .Select(e => (decimal?)e.Rate).FirstOrDefaultAsync() ?? 0m;
+        var historyCalendar = _calendar.Read();
 
         var result = rows.Select(x => new
         {
@@ -251,7 +259,7 @@ public class ResourcePlanController : ControllerBase
                 : x.ProjectNameSnapshot ?? x.ActivityName ?? $"Проект #{x.ProjectId}",
             allocationPercent = ResourcePlanningMath.OwnPercent(x, employeeRate),
             plannedFte = ResourcePlanningMath.Fte(x),
-            plannedHours = ResourcePlanningMath.Hours(x),
+            plannedHours = ResourcePlanningMath.Hours(x, historyCalendar.MonthHours(x.PeriodStart)),
             comment = x.Comment,
             updatedAt = x.UpdatedAt,
             updatedBy = x.UpdatedBy,
@@ -306,6 +314,8 @@ public class ResourcePlanController : ControllerBase
     [HttpPost("locks")]
     public async Task<IActionResult> SetLocks([FromBody] SetLockRequest request)
     {
+        if (!_permissions.ManagePeriods)
+            return StatusCode(403, new { message = "Открывать и закрывать периоды могут только назначенные ответственные после личного входа." });
         if (request.GroupValues == null || request.GroupValues.Count == 0)
             return BadRequest(new { message = "Укажите хотя бы одну группу (отдел/сектор) или \"*\" для всех." });
 
@@ -382,13 +392,8 @@ public class ResourcePlanController : ControllerBase
 
     // ── Производственный календарь: перевод часов в %% от ставки ────────
 
-    private async Task<decimal?> GetWorkingHoursForMonth(int year, int month)
-    {
-        var row = await _db.WorkCalendars.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Year == year && x.Month == month);
-
-        return row?.WorkingHours > 0 ? row.WorkingHours : null;
-    }
+    private Task<decimal?> GetWorkingHoursForMonth(int year, int month) =>
+        Task.FromResult(_calendar.Read().MonthHours(new DateOnly(year, month, 1)));
 
     // POST /api/resource-plan
     [HttpPost]
@@ -481,6 +486,10 @@ public class ResourcePlanController : ControllerBase
             .Where(x => x.EmployeeName == employee && x.PeriodStart == month &&
                         (existing == null || x.ResourceAllocationId != existing.ResourceAllocationId))
             .ToListAsync();
+        if (existing?.VacationPeriodId != null)
+            return BadRequest(new { message = "Этот отпуск рассчитан по датам. Измените весь период отпуска в разделе «Отпуск»." });
+        if (kind == "Vacation" && otherRows.Any(x => x.VacationPeriodId != null))
+            return BadRequest(new { message = "В этом месяце уже есть отпуск по датам. Дополнительный отпуск также укажите по датам, чтобы проверить пересечение." });
         var otherTotal = otherRows.Sum(x => ResourcePlanningMath.OwnPercent(x, rate) ?? 0m);
 
         var newTotal = otherTotal + ownPercent;
@@ -566,6 +575,8 @@ public class ResourcePlanController : ControllerBase
     {
         var item = await _db.ResourceAllocations.FindAsync(id);
         if (item == null) return NotFound();
+        if (item.VacationPeriodId != null)
+            return BadRequest(new { message = "Удалите весь период отпуска в разделе «Отпуск», а не отдельный месяц." });
 
         var (isOpen, reason) = await IsPeriodOpenForEmployee(item.EmployeeName, item.PeriodStart);
         if (!isOpen)
@@ -746,8 +757,7 @@ public class ResourcePlanController : ControllerBase
 
         var projectMap = _data.GetAll().ToDictionary(p => p.ProjectId);
         var rates = await _db.Employees.AsNoTracking().ToDictionaryAsync(e => e.FullName, e => e.Rate);
-        var calendar = (await _db.WorkCalendars.AsNoTracking().ToListAsync())
-            .ToDictionary(c => new DateOnly(c.Year, c.Month, 1), c => (decimal?)c.WorkingHours);
+        var calendar = _calendar.Read();
 
         var allocations = await _db.ResourceAllocations
             .AsNoTracking()
@@ -769,7 +779,7 @@ public class ResourcePlanController : ControllerBase
                 project?.Status ?? string.Empty,
                 project?.Department ?? string.Empty,
                 ResourcePlanningMath.Fte(x) * 100m,
-                ResourcePlanningMath.Hours(x, calendar.GetValueOrDefault(x.PeriodStart)),
+                ResourcePlanningMath.Hours(x, calendar.MonthHours(x.PeriodStart)),
                 x.Comment ?? string.Empty,
                 x.UpdatedAt,
                 x.UpdatedBy ?? string.Empty,

@@ -19,6 +19,7 @@ public class FeedbackController : ControllerBase
     private readonly IConfiguration _config;
     private readonly IAntiforgery _antiforgery;
     private readonly ILogger<FeedbackController> _log;
+    private readonly NavigatorPermissions _permissions;
     private static readonly TimeZoneInfo FeedbackZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Minsk");
     private static readonly Dictionary<string, string> Kinds = new()
     {
@@ -26,18 +27,17 @@ public class FeedbackController : ControllerBase
     };
 
     public FeedbackController(PmoDbContext db, ICurrentUserService user, IConfiguration config,
-        IAntiforgery antiforgery, ILogger<FeedbackController> log)
+        IAntiforgery antiforgery, ILogger<FeedbackController> log, NavigatorPermissions permissions)
     {
         _db = db; _user = user; _config = config; _antiforgery = antiforgery; _log = log;
+        _permissions = permissions;
     }
 
     // Explicit temporary opt-in, restricted to Render. Never uses a client-supplied login.
-    private bool TestReview => _config.GetValue<bool>("Feedback:AllowAnonymousReviewOnRender")
+    private bool TestSubmit => _config.GetValue<bool>("Feedback:AllowAnonymousSubmitOnRender")
         && string.Equals(Environment.GetEnvironmentVariable("RENDER"), "true", StringComparison.OrdinalIgnoreCase);
     private bool Authenticated => User.Identity?.IsAuthenticated == true;
-    private bool CanReview => TestReview || (Authenticated &&
-        (_config.GetSection("Feedback:AdminLogins").Get<string[]>() ?? new[] { @"TP\arnatovich_m" })
-        .Any(login => string.Equals(login, _user.Login, StringComparison.OrdinalIgnoreCase)));
+    private bool CanReview => _permissions.FeedbackOwner;
 
     [HttpGet("access")]
     public IActionResult Access()
@@ -45,8 +45,8 @@ public class FeedbackController : ControllerBase
         var token = _antiforgery.GetAndStoreTokens(HttpContext).RequestToken;
         return Ok(new
         {
-            canReview = CanReview, canSubmit = Authenticated || TestReview,
-            testReview = TestReview, authenticated = Authenticated,
+            canReview = CanReview, canSubmit = Authenticated || TestSubmit,
+            testReview = false, authenticated = Authenticated,
             author = Authenticated ? _user.Display : "", token, timeZone = FeedbackZone.Id
         });
     }
@@ -59,7 +59,7 @@ public class FeedbackController : ControllerBase
     [RequestSizeLimit(32768)]
     public async Task<IActionResult> Submit([FromBody] SubmitRequest request, CancellationToken ct)
     {
-        if (!Authenticated && !TestReview) return Unauthorized(new { message = "Войдите в Навигатор под своей рабочей учётной записью." });
+        if (!Authenticated && !TestSubmit) return Unauthorized(new { message = "Войдите в Навигатор под своей рабочей учётной записью." });
         var message = request.Message?.Trim() ?? "";
         if (request.RequestId == Guid.Empty || request.Kind == null || !Kinds.ContainsKey(request.Kind))
             return BadRequest(new { message = "Выберите тип обращения и повторите отправку." });

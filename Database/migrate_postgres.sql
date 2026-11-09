@@ -226,3 +226,16 @@ ALTER TABLE dbo.Employees ADD COLUMN IF NOT EXISTS EmployeeType VARCHAR(100);
 ALTER TABLE dbo.ResourceAllocations ADD COLUMN IF NOT EXISTS EmployeeAllocationPercent NUMERIC(12,6);
 ALTER TABLE dbo.ResourceAllocations ADD COLUMN IF NOT EXISTS RateSnapshot NUMERIC(8,4);
 ALTER TABLE dbo.ResourceAllocations ADD COLUMN IF NOT EXISTS ProjectNameSnapshot VARCHAR(1024);
+
+-- Отпуска по датам. Только добавление, без изменения исторических назначений.
+CREATE TABLE IF NOT EXISTS dbo.vacationperiods (
+    id UUID PRIMARY KEY, employeename VARCHAR(256) NOT NULL,
+    startdate DATE NOT NULL, enddate DATE NOT NULL,
+    ratesnapshot NUMERIC(8,4) NOT NULL, calendarversion VARCHAR(64) NOT NULL,
+    comment VARCHAR(2000), revision INTEGER NOT NULL,
+    cancelled BOOLEAN NOT NULL, updatedat TIMESTAMP WITH TIME ZONE NOT NULL,
+    updatedby TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_vacationperiods_employee_dates ON dbo.vacationperiods(employeename,startdate,enddate);
+ALTER TABLE dbo.resourceallocations ADD COLUMN IF NOT EXISTS vacationperiodid UUID;
+CREATE INDEX IF NOT EXISTS ix_resourceallocations_vacation ON dbo.resourceallocations(vacationperiodid);
